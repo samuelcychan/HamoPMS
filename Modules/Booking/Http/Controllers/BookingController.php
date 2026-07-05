@@ -44,7 +44,7 @@ class BookingController extends Controller
         $booking = Booking::findOrFail($id);
 
         $validated = $request->validate([
-            'check_in' => ['sometimes', 'date'],
+            'check_in' => ['sometimes', 'date', 'after_or_equal:today'],
             'check_out' => ['sometimes', 'date', 'after:check_in'],
             'guests' => ['sometimes', 'integer', 'min:1'],
             'status' => ['sometimes', 'string', 'in:pending,confirmed,cancelled,completed'],
