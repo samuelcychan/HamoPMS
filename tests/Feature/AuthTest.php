@@ -27,12 +27,11 @@ class AuthTest extends TestCase
     {
         $user = User::factory()->create([
             'email' => 'john@example.com',
-            'password' => 'password123',
         ]);
 
         $response = $this->postJson('/api/v1/auth/login', [
             'email' => $user->email,
-            'password' => 'password123',
+            'password' => 'password',
         ]);
 
         $response->assertOk()

@@ -11,21 +11,21 @@ class UserController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $users = User::where('id', $request->user()->id)->paginate(15);
-
-        return response()->json($users);
+        return response()->json($request->user());
     }
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $user = User::where('id', $request->user()->id)->findOrFail($id);
+        abort_if((string) $request->user()->id !== $id, 404);
+        $user = $request->user();
 
         return response()->json($user);
     }
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $user = User::where('id', $request->user()->id)->findOrFail($id);
+        abort_if((string) $request->user()->id !== $id, 404);
+        $user = $request->user();
 
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
