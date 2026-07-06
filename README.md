@@ -45,9 +45,6 @@ HamoPMS/
 │   ├── Booking/
 │   │   ├── Http/Controllers/
 │   │   ├── Models/
-│   │   ├── Routes/
-│   │   ├── Services/
-│   │   └── Tests/
 │   ├── Payment/
 │   ├── Property/
 │   └── User/
@@ -162,7 +159,7 @@ All endpoints except `/api/health`, `/api/v1/auth/register`, and `/api/v1/auth/l
 
 ## Domain Modules
 
-The codebase is organised into vertical domain slices under `Modules/`. Each module owns its controllers, models, services, and tests.
+The codebase is organised into vertical domain slices under `Modules/`. Each module owns its controllers and models.
 
 | Module | Responsibility |
 |--------|---------------|

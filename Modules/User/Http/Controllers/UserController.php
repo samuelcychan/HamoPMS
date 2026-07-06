@@ -11,25 +11,25 @@ class UserController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $users = User::paginate(15);
+        $users = User::where('id', $request->user()->id)->paginate(15);
 
         return response()->json($users);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $user = User::findOrFail($id);
+        $user = User::where('id', $request->user()->id)->findOrFail($id);
 
         return response()->json($user);
     }
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $user = User::findOrFail($id);
+        $user = User::where('id', $request->user()->id)->findOrFail($id);
 
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
-            'email' => ['sometimes', 'string', 'email', 'max:255', 'unique:users,email,'.$id],
+            'email' => ['sometimes', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
         ]);
 
         $user->update($validated);

@@ -8,8 +8,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | All API routes are prefixed with /api automatically by the router.
-| Domain-specific routes are grouped by version and loaded from each
-| Module's routes directory.
+| Domain-specific versioned route files are loaded from routes/api/v1.
 |
 */
 

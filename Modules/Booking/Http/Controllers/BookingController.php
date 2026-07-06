@@ -11,7 +11,7 @@ class BookingController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $bookings = Booking::paginate(15);
+        $bookings = Booking::where('user_id', $request->user()->id)->paginate(15);
 
         return response()->json($bookings);
     }
@@ -32,16 +32,16 @@ class BookingController extends Controller
         return response()->json($booking, 201);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $booking = Booking::findOrFail($id);
+        $booking = Booking::where('user_id', $request->user()->id)->findOrFail($id);
 
         return response()->json($booking);
     }
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $booking = Booking::findOrFail($id);
+        $booking = Booking::where('user_id', $request->user()->id)->findOrFail($id);
 
         $validated = $request->validate([
             'check_in' => ['sometimes', 'date', 'after_or_equal:today'],
@@ -56,9 +56,9 @@ class BookingController extends Controller
         return response()->json($booking);
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
-        $booking = Booking::findOrFail($id);
+        $booking = Booking::where('user_id', $request->user()->id)->findOrFail($id);
         $booking->delete();
 
         return response()->json(null, 204);

@@ -11,7 +11,7 @@ class PaymentController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $payments = Payment::paginate(15);
+        $payments = Payment::where('user_id', $request->user()->id)->paginate(15);
 
         return response()->json($payments);
     }
@@ -32,9 +32,9 @@ class PaymentController extends Controller
         return response()->json($payment, 201);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $payment = Payment::findOrFail($id);
+        $payment = Payment::where('user_id', $request->user()->id)->findOrFail($id);
 
         return response()->json($payment);
     }
