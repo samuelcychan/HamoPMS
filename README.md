@@ -152,6 +152,8 @@ All routes are prefixed with `/api`. Versioned routes live under `/api/v1/`.
 | `GET/PUT/DELETE` | `/api/v1/bookings/{id}` | Get / update / delete booking |
 | `GET/POST` | `/api/v1/payments` | List / create payments |
 | `GET` | `/api/v1/payments/{id}` | Get payment details |
+| `GET` | `/api/v1/bookings/{booking_id}/folio` | Get / auto-create folio for a booking |
+| `POST` | `/api/v1/bookings/{booking_id}/folio/line-items` | Post a charge or tax entry to folio |
 
 All endpoints except `/api/health`, `/api/v1/auth/register`, and `/api/v1/auth/login` require a `Bearer` token from Sanctum.
 
@@ -167,6 +169,7 @@ The codebase is organised into vertical domain slices under `Modules/`. Each mod
 | `Property` | Property listings and management |
 | `Booking` | Reservation lifecycle |
 | `Payment` | Payment processing and records |
+| `Folio` | Guest folio ledger — immutable room-charge and tax postings |
 
 Module namespaces are auto-loaded via `composer.json`:
 
