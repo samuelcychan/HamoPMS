@@ -1,0 +1,33 @@
+<?php
+
+namespace Modules\Folio\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Modules\Booking\Models\Booking;
+use Modules\Folio\Models\Folio;
+use Modules\Folio\Models\FolioLineItem;
+
+class FolioLineItemController extends Controller
+{
+    public function store(Request $request, string $bookingId): JsonResponse
+    {
+        $booking = Booking::where('user_id', $request->user()->id)->findOrFail($bookingId);
+
+        $validated = $request->validate([
+            'type' => ['required', 'string', 'in:'.implode(',', FolioLineItem::VALID_TYPES)],
+            'description' => ['required', 'string', 'max:255'],
+            'amount' => ['required', 'numeric'],
+        ]);
+
+        $folio = Folio::firstOrCreate(
+            ['booking_id' => $booking->id],
+            ['status' => 'open', 'currency' => 'USD'],
+        );
+
+        $lineItem = $folio->lineItems()->create($validated);
+
+        return response()->json($lineItem, 201);
+    }
+}

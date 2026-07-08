@@ -1,0 +1,46 @@
+<?php
+
+namespace Modules\Folio\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LogicException;
+
+class FolioLineItem extends Model
+{
+    public const CREATED_AT = 'posted_at';
+
+    public const UPDATED_AT = null;
+
+    public const VALID_TYPES = ['room_charge', 'tax'];
+
+    protected $fillable = [
+        'folio_id',
+        'type',
+        'description',
+        'amount',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+            'posted_at' => 'datetime',
+        ];
+    }
+
+    public function folio(): BelongsTo
+    {
+        return $this->belongsTo(Folio::class);
+    }
+
+    protected function performUpdate(\Illuminate\Database\Eloquent\Builder $query): bool
+    {
+        throw new LogicException('Folio line items are immutable and cannot be updated.');
+    }
+
+    public function delete(): bool|null
+    {
+        throw new LogicException('Folio line items are immutable and cannot be deleted.');
+    }
+}
