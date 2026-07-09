@@ -55,6 +55,7 @@ class AuthController extends Controller
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
+
         $token = $user->createToken('api')->plainTextToken;
 
         Log::info('auth.login', ['user_id' => $user->id]);
