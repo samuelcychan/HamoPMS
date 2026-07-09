@@ -16,8 +16,9 @@ Route::post('/auth/login', [\Modules\User\Http\Controllers\AuthController::class
     ->middleware('throttle:auth')
     ->name('auth.login');
 
-Route::middleware(['auth:sanctum', 'throttle:auth'])->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [\Modules\User\Http\Controllers\AuthController::class, 'logout'])
+        ->middleware('throttle:auth')
         ->name('auth.logout');
 
     Route::get('/auth/me', [\Modules\User\Http\Controllers\AuthController::class, 'me'])
