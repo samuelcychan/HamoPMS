@@ -70,7 +70,7 @@ class AuthTest extends TestCase
 
     public function test_login_endpoint_is_rate_limited(): void
     {
-        foreach (range(1, 5) as $_) {
+        foreach (range(1, 5) as $attempt) {
             $this->postJson('/api/v1/auth/login', [
                 'email' => 'missing@example.com',
                 'password' => 'password',
@@ -85,7 +85,7 @@ class AuthTest extends TestCase
 
     public function test_register_endpoint_is_rate_limited(): void
     {
-        foreach (range(1, 5) as $_) {
+        foreach (range(1, 5) as $attempt) {
             $this->postJson('/api/v1/auth/register', [
                 'name' => 'John Doe',
             ])->assertStatus(422);
