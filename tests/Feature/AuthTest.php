@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
@@ -60,5 +61,39 @@ class AuthTest extends TestCase
 
         $response->assertOk()
             ->assertJson(['message' => 'Logged out successfully.']);
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/v1/auth/me')
+            ->assertUnauthorized();
+    }
+
+    public function test_auth_endpoints_are_rate_limited(): void
+    {
+        foreach (range(1, 5) as $attempt) {
+            $this->postJson('/api/v1/auth/login', [
+                'email' => 'missing@example.com',
+                'password' => 'password',
+            ])->assertStatus(422);
+        }
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => 'missing@example.com',
+            'password' => 'password',
+        ])->assertTooManyRequests();
+    }
+
+    public function test_auth_events_are_written_to_the_audit_log(): void
+    {
+        Log::spy();
+        $user = User::factory()->create();
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->assertOk();
+
+        Log::shouldHaveReceived('info')
+            ->with('auth.login', ['user_id' => $user->id])
+            ->once();
     }
 }
