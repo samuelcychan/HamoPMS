@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
-use Mockery;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
@@ -55,7 +54,8 @@ class AuthTest extends TestCase
     public function test_authenticated_user_can_logout(): void
     {
         $user = User::factory()->create();
-        $token = $user->createToken('test-token')->plainTextToken;
+        $accessToken = $user->createToken('test-token');
+        $token = $accessToken->plainTextToken;
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/v1/auth/logout');
@@ -158,7 +158,8 @@ class AuthTest extends TestCase
             ])
             ->once();
 
-        $token = $user->createToken('test-token')->plainTextToken;
+        $accessToken = $user->createToken('test-token');
+        $token = $accessToken->plainTextToken;
 
         $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/v1/auth/logout')
@@ -167,7 +168,7 @@ class AuthTest extends TestCase
         Log::shouldHaveReceived('info')
             ->with('auth.logout', [
                 'user_id' => $user->id,
-                'token_id' => Mockery::type('int'),
+                'token_id' => $accessToken->accessToken->id,
             ])
             ->once();
     }
