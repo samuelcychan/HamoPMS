@@ -165,7 +165,10 @@ class AuthTest extends TestCase
             ->assertOk();
 
         Log::shouldHaveReceived('info')
-            ->with('auth.logout', Mockery::subset(['user_id' => $user->id]))
+            ->with('auth.logout', [
+                'user_id' => $user->id,
+                'token_id' => Mockery::type('int'),
+            ])
             ->once();
     }
 }
