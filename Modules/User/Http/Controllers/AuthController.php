@@ -26,9 +26,9 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        Log::info('auth.register', ['user_id' => $user->id]);
-
         $token = $user->createToken('api')->plainTextToken;
+
+        Log::info('auth.register', ['user_id' => $user->id]);
 
         return response()->json([
             'user' => $user,
@@ -55,9 +55,9 @@ class AuthController extends Controller
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
-        Log::info('auth.login', ['user_id' => $user->id]);
-
         $token = $user->createToken('api')->plainTextToken;
+
+        Log::info('auth.login', ['user_id' => $user->id]);
 
         return response()->json([
             'user' => $user,
