@@ -3,6 +3,7 @@
 namespace Modules\Payment\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Payment\Models\Payment;
@@ -11,9 +12,11 @@ class PaymentController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $payments = Payment::where('user_id', $request->user()->id)->paginate(15);
+        $request->validate(['per_page' => ['sometimes', 'integer', 'min:1', 'max:100']]);
+        $payments = Payment::where('user_id', $request->user()->id)
+            ->paginate($request->integer('per_page', 15));
 
-        return response()->json($payments);
+        return ApiResponse::paginated($payments);
     }
 
     public function store(Request $request): JsonResponse
@@ -29,13 +32,13 @@ class PaymentController extends Controller
         $validated['status'] = 'pending';
         $payment = Payment::create($validated);
 
-        return response()->json($payment, 201);
+        return ApiResponse::success($payment, 201);
     }
 
     public function show(Request $request, string $id): JsonResponse
     {
         $payment = Payment::where('user_id', $request->user()->id)->findOrFail($id);
 
-        return response()->json($payment);
+        return ApiResponse::success($payment);
     }
 }

@@ -4,6 +4,7 @@ namespace Modules\User\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -11,7 +12,7 @@ class UserController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        return response()->json($request->user());
+        return ApiResponse::success($request->user());
     }
 
     public function show(Request $request, string $id): JsonResponse
@@ -19,7 +20,7 @@ class UserController extends Controller
         abort_if((string) $request->user()->id !== $id, 404);
         $user = $request->user();
 
-        return response()->json($user);
+        return ApiResponse::success($user);
     }
 
     public function update(Request $request, string $id): JsonResponse
@@ -34,6 +35,6 @@ class UserController extends Controller
 
         $user->update($validated);
 
-        return response()->json($user);
+        return ApiResponse::success($user);
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/health', function () {
-    return response()->json([
+    return ApiResponse::success([
         'status' => 'ok',
         'service' => config('app.name'),
         'version' => 'v1',

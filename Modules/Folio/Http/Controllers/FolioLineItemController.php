@@ -3,6 +3,7 @@
 namespace Modules\Folio\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Booking\Models\Booking;
@@ -28,6 +29,6 @@ class FolioLineItemController extends Controller
 
         $lineItem = $folio->lineItems()->create($validated);
 
-        return response()->json($lineItem, 201);
+        return ApiResponse::success($lineItem, 201);
     }
 }
