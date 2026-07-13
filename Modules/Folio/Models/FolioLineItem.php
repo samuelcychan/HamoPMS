@@ -36,6 +36,12 @@ class FolioLineItem extends Model
 
     public const POSTABLE_TYPES = ['room_charge', 'tax'];
 
+    public const TAX_TYPES = [
+        'tax',
+        self::TYPE_ANCILLARY_TAX,
+        self::TYPE_ANCILLARY_TAX_ADJUSTMENT,
+    ];
+
     protected $fillable = [
         'folio_id',
         'ancillary_charge_type_id',

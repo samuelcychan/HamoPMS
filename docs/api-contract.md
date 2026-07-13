@@ -90,4 +90,6 @@ Payment intent, capture, refund, void, split-settlement, and webhook reconciliat
 
 Arrivals, departures, in-house, occupancy, and CSV export behavior is documented in [`docs/operational-reports.md`](operational-reports.md).
 
+Daily revenue, tax, payment-method reconciliation, and immutable period-close behavior is documented in [`docs/financial-reports.md`](financial-reports.md).
+
 Cancellation windows, penalties, and non-refundable behavior are documented in [`docs/cancellations.md`](cancellations.md).

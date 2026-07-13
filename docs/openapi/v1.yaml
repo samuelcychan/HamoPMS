@@ -824,6 +824,96 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /reports/revenue:
+    get:
+      tags: [Reports]
+      operationId: getRevenueReport
+      summary: Report posted revenue and settled payments for a period
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportPropertyId'
+        - $ref: '#/components/parameters/PropertyHeader'
+        - $ref: '#/components/parameters/RevenueStartDate'
+        - $ref: '#/components/parameters/RevenueEndDate'
+        - $ref: '#/components/parameters/ReportCurrency'
+      responses:
+        '200':
+          description: Revenue and payment reconciliation report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevenueReportResponse'
+        '400':
+          $ref: '#/components/responses/PropertyContextRequired'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /reports/revenue/period-close:
+    post:
+      tags: [Reports]
+      operationId: closeRevenuePeriod
+      summary: Create or replay an immutable revenue period close
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevenuePeriodRequest'
+      responses:
+        '200':
+          description: Existing period-close snapshot replayed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevenuePeriodCloseResponse'
+        '201':
+          description: Period-close snapshot created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevenuePeriodCloseResponse'
+        '400':
+          $ref: '#/components/responses/PropertyContextRequired'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /reports/revenue/period-close/{periodCloseId}:
+    get:
+      tags: [Reports]
+      operationId: getRevenuePeriodClose
+      summary: Retrieve an immutable revenue period close
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PeriodCloseId'
+        - $ref: '#/components/parameters/ReportPropertyId'
+        - $ref: '#/components/parameters/PropertyHeader'
+      responses:
+        '200':
+          description: Stored period-close snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevenuePeriodCloseReadResponse'
+        '400':
+          $ref: '#/components/responses/PropertyContextRequired'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     bearerAuth:
@@ -893,6 +983,37 @@ components:
         type: string
         enum: [json, csv]
         default: json
+    RevenueStartDate:
+      name: start_date
+      in: query
+      required: false
+      description: Inclusive period start; defaults to today.
+      schema:
+        type: string
+        format: date
+    RevenueEndDate:
+      name: end_date
+      in: query
+      required: false
+      description: Inclusive period end; defaults to start_date and is limited to 366 days.
+      schema:
+        type: string
+        format: date
+    ReportCurrency:
+      name: currency
+      in: query
+      required: false
+      description: Three-letter report currency; defaults to USD.
+      schema:
+        type: string
+        pattern: '^[A-Za-z]{3}$'
+        default: USD
+    PeriodCloseId:
+      name: periodCloseId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Identifier'
     PropertyHeader:
       name: X-Property-ID
       in: header
@@ -1516,6 +1637,185 @@ components:
           const: 250
         within_target:
           type: boolean
+    RevenuePeriodRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        property_id:
+          $ref: '#/components/schemas/Identifier'
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        currency:
+          type: string
+          pattern: '^[A-Za-z]{3}$'
+    RevenueAmounts:
+      type: object
+      required: [net_revenue, tax_revenue, gross_revenue]
+      properties:
+        net_revenue:
+          type: string
+          pattern: '^-?\d+\.\d{2}$'
+        tax_revenue:
+          type: string
+          pattern: '^-?\d+\.\d{2}$'
+        gross_revenue:
+          type: string
+          pattern: '^-?\d+\.\d{2}$'
+    DailyRevenue:
+      allOf:
+        - $ref: '#/components/schemas/RevenueAmounts'
+        - type: object
+          required: [date]
+          properties:
+            date:
+              type: string
+              format: date
+    RoomTypeRevenue:
+      allOf:
+        - $ref: '#/components/schemas/RevenueAmounts'
+        - type: object
+          required: [room_type_id, room_type_code, room_type_name]
+          properties:
+            room_type_id:
+              oneOf:
+                - $ref: '#/components/schemas/Identifier'
+                - type: 'null'
+            room_type_code:
+              type: [string, 'null']
+            room_type_name:
+              type: [string, 'null']
+    PaymentAmounts:
+      type: object
+      required: [captured_amount, refunded_amount, net_settled_amount]
+      properties:
+        captured_amount:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+        refunded_amount:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+        net_settled_amount:
+          type: string
+          pattern: '^-?\d+\.\d{2}$'
+    PaymentMethodRevenue:
+      allOf:
+        - $ref: '#/components/schemas/PaymentAmounts'
+        - type: object
+          required: [method, payment_count]
+          properties:
+            method:
+              type: string
+            payment_count:
+              type: integer
+              minimum: 0
+    RevenueReport:
+      type: object
+      required:
+        - property_id
+        - period
+        - currency
+        - revenue
+        - daily
+        - by_room_type
+        - payments
+        - by_payment_method
+        - reconciliation
+      properties:
+        property_id:
+          $ref: '#/components/schemas/Identifier'
+        period:
+          type: object
+          required: [start_date, end_date]
+          properties:
+            start_date:
+              type: string
+              format: date
+            end_date:
+              type: string
+              format: date
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        revenue:
+          $ref: '#/components/schemas/RevenueAmounts'
+        daily:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailyRevenue'
+        by_room_type:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomTypeRevenue'
+        payments:
+          $ref: '#/components/schemas/PaymentAmounts'
+        by_payment_method:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentMethodRevenue'
+        reconciliation:
+          type: object
+          required: [revenue_less_net_settlement]
+          properties:
+            revenue_less_net_settlement:
+              type: string
+              pattern: '^-?\d+\.\d{2}$'
+    RevenuePeriodClose:
+      type: object
+      required:
+        - id
+        - property_id
+        - closed_by
+        - period_start
+        - period_end
+        - currency
+        - snapshot
+        - checksum
+        - closed_at
+        - created_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Identifier'
+        property_id:
+          $ref: '#/components/schemas/Identifier'
+        closed_by:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        period_start:
+          type: string
+          format: date-time
+        period_end:
+          type: string
+          format: date-time
+        currency:
+          type: string
+        snapshot:
+          $ref: '#/components/schemas/RevenueReport'
+        checksum:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+        closed_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    FinancialReportPerformance:
+      type: object
+      required: [duration_ms, target_ms, within_target]
+      properties:
+        duration_ms:
+          type: number
+          minimum: 0
+        target_ms:
+          type: integer
+          const: 500
+        within_target:
+          type: boolean
     Booking:
       type: object
       required:
@@ -1860,6 +2160,40 @@ components:
               $ref: '#/components/schemas/OperationalReportMeta'
             performance:
               $ref: '#/components/schemas/ReportPerformance'
+    RevenueReportResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/RevenueReport'
+        meta:
+          type: object
+          required: [performance]
+          properties:
+            performance:
+              $ref: '#/components/schemas/FinancialReportPerformance'
+    RevenuePeriodCloseResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/RevenuePeriodClose'
+        meta:
+          type: object
+          required: [period_close]
+          properties:
+            period_close:
+              type: object
+              required: [replayed]
+              properties:
+                replayed:
+                  type: boolean
+    RevenuePeriodCloseReadResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/RevenuePeriodClose'
     PaymentOperationResponse:
       type: object
       required: [data, meta]
