@@ -10,6 +10,19 @@ class Booking extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_CONFIRMED = 'confirmed';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
+    public const STATUS_COMPLETED = 'completed';
+
+    public const INVENTORY_BLOCKING_STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_CONFIRMED,
+    ];
+
     protected $fillable = [
         'user_id',
         'property_id',
