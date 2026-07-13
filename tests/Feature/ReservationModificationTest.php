@@ -69,6 +69,7 @@ class ReservationModificationTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('data.room_type_id', $this->deluxe->id)
+            ->assertJsonPath('data.nightly_rate', '150.00')
             ->assertJsonPath('data.guests', 3)
             ->assertJsonPath('data.notes', 'Late arrival')
             ->assertJsonPath('data.special_requests.0', 'High floor')

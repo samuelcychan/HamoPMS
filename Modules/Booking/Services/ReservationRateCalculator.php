@@ -8,7 +8,7 @@ class ReservationRateCalculator
 {
     public function totalCents(string $nightlyRate, CarbonImmutable $checkIn, CarbonImmutable $checkOut): int
     {
-        return $this->cents($nightlyRate) * (int) $checkIn->diffInDays($checkOut);
+        return $this->amountCents($nightlyRate) * (int) $checkIn->diffInDays($checkOut);
     }
 
     public function formatCents(int $cents): string
@@ -19,7 +19,7 @@ class ReservationRateCalculator
         return sprintf('%s%d.%02d', $sign, intdiv($absolute, 100), $absolute % 100);
     }
 
-    private function cents(string $amount): int
+    public function amountCents(string $amount): int
     {
         if (! preg_match('/^\d+(?:\.\d{1,2})?$/', $amount)) {
             throw new \InvalidArgumentException('Room rates must be non-negative decimal amounts.');

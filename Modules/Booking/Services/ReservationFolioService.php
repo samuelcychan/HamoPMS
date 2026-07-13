@@ -20,7 +20,7 @@ class ReservationFolioService
 
         if ($folio->status !== 'open') {
             throw ValidationException::withMessages([
-                'folio' => ['A closed folio cannot receive a reservation modification.'],
+                'folio' => ['A closed folio cannot receive reservation adjustments.'],
             ]);
         }
 
@@ -46,5 +46,26 @@ class ReservationFolioService
             'description' => "Reservation modification #{$modificationId} room-rate adjustment",
             'amount' => $this->rates->formatCents($differenceCents),
         ]);
+    }
+
+    public function settleCancellation(Booking $booking, int $roomTotalCents, int $penaltyCents): Folio
+    {
+        $folio = $this->ensureRoomRateBaseline($booking, $roomTotalCents);
+
+        $folio->lineItems()->create([
+            'type' => FolioLineItem::TYPE_ROOM_RATE_REVERSAL,
+            'description' => 'Cancelled reservation room-rate reversal',
+            'amount' => $this->rates->formatCents(-$roomTotalCents),
+        ]);
+
+        if ($penaltyCents > 0) {
+            $folio->lineItems()->create([
+                'type' => FolioLineItem::TYPE_CANCELLATION_PENALTY,
+                'description' => 'Reservation cancellation penalty',
+                'amount' => $this->rates->formatCents($penaltyCents),
+            ]);
+        }
+
+        return $folio;
     }
 }

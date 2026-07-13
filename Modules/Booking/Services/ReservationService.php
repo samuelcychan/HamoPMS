@@ -66,6 +66,7 @@ class ReservationService
                 ...$attributes,
                 'user_id' => $userId,
                 'status' => Booking::STATUS_CONFIRMED,
+                'nightly_rate' => $roomType->base_rate,
             ]);
             $totalCents = $this->rates->totalCents($roomType->base_rate, $checkIn, $checkOut);
             $this->folios->ensureRoomRateBaseline($booking, $totalCents);

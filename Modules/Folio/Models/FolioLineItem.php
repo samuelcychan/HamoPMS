@@ -13,6 +13,10 @@ class FolioLineItem extends Model
 
     public const TYPE_ROOM_RATE_ADJUSTMENT = 'room_rate_adjustment';
 
+    public const TYPE_ROOM_RATE_REVERSAL = 'room_rate_reversal';
+
+    public const TYPE_CANCELLATION_PENALTY = 'cancellation_penalty';
+
     public const CREATED_AT = 'posted_at';
 
     public const UPDATED_AT = null;

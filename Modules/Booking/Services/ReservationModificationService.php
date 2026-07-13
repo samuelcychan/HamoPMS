@@ -105,7 +105,8 @@ class ReservationModificationService
                 }
             }
 
-            $oldTotalCents = $this->rates->totalCents($oldRoomType->base_rate, $oldCheckIn, $oldCheckOut);
+            $oldNightlyRate = $booking->nightly_rate ?? $oldRoomType->base_rate;
+            $oldTotalCents = $this->rates->totalCents($oldNightlyRate, $oldCheckIn, $oldCheckOut);
             $newTotalCents = $this->rates->totalCents($newRoomType->base_rate, $checkIn, $checkOut);
             $differenceCents = $newTotalCents - $oldTotalCents;
 
@@ -114,6 +115,7 @@ class ReservationModificationService
                 'check_in' => $checkIn->toDateString(),
                 'check_out' => $checkOut->toDateString(),
                 'guests' => $guests,
+                'nightly_rate' => $newRoomType->base_rate,
                 'notes' => array_key_exists('notes', $attributes) ? $attributes['notes'] : $booking->notes,
                 'special_requests' => array_key_exists('special_requests', $attributes)
                     ? $attributes['special_requests']
@@ -154,6 +156,7 @@ class ReservationModificationService
             'guests' => (int) $booking->guests,
             'notes' => $booking->notes,
             'special_requests' => $booking->special_requests,
+            'nightly_rate' => $booking->nightly_rate,
             'status' => $booking->status,
         ];
     }

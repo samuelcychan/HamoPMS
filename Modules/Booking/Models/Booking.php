@@ -15,6 +15,10 @@ class Booking extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $hidden = [
+        'cancellation_policy_snapshot',
+    ];
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_CONFIRMED = 'confirmed';
@@ -44,6 +48,12 @@ class Booking extends Model
         'checked_in_by',
         'notes',
         'special_requests',
+        'nightly_rate',
+        'cancellation_policy',
+        'cancellation_policy_snapshot',
+        'cancelled_at',
+        'cancelled_by',
+        'cancellation_penalty',
     ];
 
     protected function casts(): array
@@ -54,6 +64,10 @@ class Booking extends Model
             'guests' => 'integer',
             'checked_in_at' => 'datetime',
             'special_requests' => 'array',
+            'nightly_rate' => 'decimal:2',
+            'cancellation_policy_snapshot' => 'array',
+            'cancelled_at' => 'datetime',
+            'cancellation_penalty' => 'decimal:2',
         ];
     }
 
@@ -75,5 +89,10 @@ class Booking extends Model
     public function modifications(): HasMany
     {
         return $this->hasMany(BookingModification::class);
+    }
+
+    public function cancelledByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 }
