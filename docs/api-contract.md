@@ -92,4 +92,6 @@ Arrivals, departures, in-house, occupancy, and CSV export behavior is documented
 
 Daily revenue, tax, payment-method reconciliation, and immutable period-close behavior is documented in [`docs/financial-reports.md`](financial-reports.md).
 
+Checkout-created housekeeping tasks, assignment, cleaning transitions, SLAs, and completion behavior are documented in [`docs/housekeeping.md`](housekeeping.md).
+
 Cancellation windows, penalties, and non-refundable behavior are documented in [`docs/cancellations.md`](cancellations.md).

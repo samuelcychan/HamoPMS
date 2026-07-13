@@ -34,6 +34,7 @@ class CheckOutController extends Controller
                 'folio_id' => $result['folio']->id,
                 'outstanding_balance' => $result['outstanding_balance'],
                 'late_checkout_fee' => $result['late_checkout_fee'],
+                'housekeeping_task_id' => $result['housekeeping_task']->id,
             ],
         ]);
     }

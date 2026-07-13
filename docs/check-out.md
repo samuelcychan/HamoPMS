@@ -16,6 +16,6 @@ Defaults are controlled by `CHECKOUT_DEPARTURE_TIME` (`11:00`), `CHECKOUT_LATE_F
 
 ## Successful closure
 
-With a zero balance, one transaction closes the folio, marks the reservation `completed`, records `checked_out_at` and `checked_out_by`, and changes the assigned room from `occupied` to `dirty` with an immutable status-history entry. The dirty room is released from the stay and awaits housekeeping before it can be assigned again.
+With a zero balance, one transaction closes the folio, marks the reservation `completed`, records `checked_out_at` and `checked_out_by`, changes the assigned room from `occupied` to `dirty`, and creates its pending housekeeping task. The response includes `meta.checkout.housekeeping_task_id`. The dirty room cannot be assigned again until that task completes.
 
 After the transaction succeeds, `ReservationCheckedOut` is dispatched for reporting consumers. The response returns the completed reservation in `data` and closure details in `meta.checkout`.

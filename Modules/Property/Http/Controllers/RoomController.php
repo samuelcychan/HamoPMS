@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Modules\Property\Models\Property;
 use Modules\Property\Models\Room;
 use Modules\Property\Services\RoomInventoryService;
@@ -84,6 +85,14 @@ class RoomController extends Controller
             'status' => ['required', Rule::in(Room::STATUSES)],
             'reason' => ['nullable', 'required_if:status,'.Room::STATUS_OUT_OF_SERVICE, 'string', 'max:1000'],
         ]);
+        $room = $this->findRoom($propertyId, $roomId);
+
+        if ($validated['status'] === Room::STATUS_CLEANING
+            || ($room->status === Room::STATUS_CLEANING && $validated['status'] === Room::STATUS_CLEAN)) {
+            throw ValidationException::withMessages([
+                'status' => ['Use the housekeeping task lifecycle for cleaning transitions.'],
+            ]);
+        }
 
         $room = $this->inventory->transitionStatus(
             (int) $propertyId,

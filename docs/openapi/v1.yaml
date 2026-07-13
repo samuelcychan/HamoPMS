@@ -31,6 +31,8 @@ tags:
     description: Signed gateway settlement reconciliation.
   - name: Reports
     description: Property-scoped operational and occupancy reports with JSON or CSV output.
+  - name: Housekeeping
+    description: Checkout-created room turnaround tasks and cleaning transitions.
 paths:
   /auth/register:
     post:
@@ -430,6 +432,149 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CancellationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /properties/{propertyId}/housekeeping-tasks:
+    get:
+      tags: [Housekeeping]
+      operationId: listHousekeepingTasks
+      summary: List a property's housekeeping board
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, assigned, in_progress, completed]
+        - name: assigned_to
+          in: query
+          schema:
+            $ref: '#/components/schemas/Identifier'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Paginated housekeeping tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HousekeepingTaskCollectionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /properties/{propertyId}/housekeeping-tasks/{taskId}:
+    get:
+      tags: [Housekeeping]
+      operationId: getHousekeepingTask
+      summary: Retrieve a housekeeping task
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+        - $ref: '#/components/parameters/HousekeepingTaskId'
+      responses:
+        '200':
+          description: Housekeeping task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HousekeepingTaskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /properties/{propertyId}/housekeeping-tasks/{taskId}/assignment:
+    patch:
+      tags: [Housekeeping]
+      operationId: assignHousekeepingTask
+      summary: Assign or reassign a pending housekeeping task
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+        - $ref: '#/components/parameters/HousekeepingTaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HousekeepingAssignmentRequest'
+      responses:
+        '200':
+          description: Assigned task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HousekeepingTaskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /properties/{propertyId}/housekeeping-tasks/{taskId}/start:
+    post:
+      tags: [Housekeeping]
+      operationId: startHousekeepingTask
+      summary: Start an assigned housekeeping task
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+        - $ref: '#/components/parameters/HousekeepingTaskId'
+      responses:
+        '200':
+          description: In-progress task and cleaning room
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HousekeepingTaskResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /properties/{propertyId}/housekeeping-tasks/{taskId}/complete:
+    post:
+      tags: [Housekeeping]
+      operationId: completeHousekeepingTask
+      summary: Complete a task and return the room to clean inventory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+        - $ref: '#/components/parameters/HousekeepingTaskId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HousekeepingCompletionRequest'
+      responses:
+        '200':
+          description: Completed task and clean room
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HousekeepingTaskResponse'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
@@ -933,6 +1078,12 @@ components:
       required: true
       schema:
         $ref: '#/components/schemas/Identifier'
+    HousekeepingTaskId:
+      name: taskId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Identifier'
     ChargeTypeId:
       name: chargeTypeId
       in: path
@@ -1338,6 +1489,20 @@ components:
           type: number
           exclusiveMinimum: 0
           maximum: 9999999999.99
+    HousekeepingAssignmentRequest:
+      type: object
+      additionalProperties: false
+      required: [assigned_to]
+      properties:
+        assigned_to:
+          $ref: '#/components/schemas/Identifier'
+    HousekeepingCompletionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        completion_notes:
+          type: [string, 'null']
+          maxLength: 2000
     RoomMoveRequest:
       type: object
       additionalProperties: false
@@ -1393,7 +1558,73 @@ components:
             - 'null'
         status:
           type: string
-          enum: [clean, dirty, occupied, out_of_service]
+          enum: [clean, dirty, cleaning, occupied, out_of_service]
+    HousekeepingTask:
+      type: object
+      required:
+        - id
+        - property_id
+        - room_id
+        - status
+        - priority
+        - due_at
+        - created_at
+        - updated_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Identifier'
+        property_id:
+          $ref: '#/components/schemas/Identifier'
+        room_id:
+          $ref: '#/components/schemas/Identifier'
+        booking_id:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        created_by:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        assigned_to:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        assigned_by:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        completed_by:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        status:
+          type: string
+          enum: [pending, assigned, in_progress, completed]
+        priority:
+          type: string
+          enum: [low, normal, high, urgent]
+        due_at:
+          type: string
+          format: date-time
+        assigned_at:
+          type: [string, 'null']
+          format: date-time
+        started_at:
+          type: [string, 'null']
+          format: date-time
+        completed_at:
+          type: [string, 'null']
+          format: date-time
+        notes:
+          type: [string, 'null']
+        completion_notes:
+          type: [string, 'null']
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     BookingStatus:
       type: string
       enum: [pending, confirmed, checked_in, cancelled, completed]
@@ -2054,7 +2285,7 @@ components:
           properties:
             checkout:
               type: object
-              required: [folio_id, outstanding_balance, late_checkout_fee]
+              required: [folio_id, outstanding_balance, late_checkout_fee, housekeeping_task_id]
               properties:
                 folio_id:
                   $ref: '#/components/schemas/Identifier'
@@ -2064,6 +2295,28 @@ components:
                 late_checkout_fee:
                   type: string
                   pattern: '^\d+\.\d{2}$'
+                housekeeping_task_id:
+                  $ref: '#/components/schemas/Identifier'
+    HousekeepingTaskResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/HousekeepingTask'
+    HousekeepingTaskCollectionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/HousekeepingTask'
+        meta:
+          type: object
+          required: [pagination]
+          properties:
+            pagination:
+              $ref: '#/components/schemas/Pagination'
     AncillaryChargeTypeResponse:
       type: object
       required: [data]

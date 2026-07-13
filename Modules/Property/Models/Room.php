@@ -16,6 +16,8 @@ class Room extends Model
 
     public const STATUS_DIRTY = 'dirty';
 
+    public const STATUS_CLEANING = 'cleaning';
+
     public const STATUS_OCCUPIED = 'occupied';
 
     public const STATUS_OUT_OF_SERVICE = 'out_of_service';
@@ -23,13 +25,15 @@ class Room extends Model
     public const STATUSES = [
         self::STATUS_CLEAN,
         self::STATUS_DIRTY,
+        self::STATUS_CLEANING,
         self::STATUS_OCCUPIED,
         self::STATUS_OUT_OF_SERVICE,
     ];
 
     public const ALLOWED_STATUS_TRANSITIONS = [
         self::STATUS_CLEAN => [self::STATUS_DIRTY, self::STATUS_OCCUPIED, self::STATUS_OUT_OF_SERVICE],
-        self::STATUS_DIRTY => [self::STATUS_CLEAN, self::STATUS_OUT_OF_SERVICE],
+        self::STATUS_DIRTY => [self::STATUS_CLEANING, self::STATUS_OUT_OF_SERVICE],
+        self::STATUS_CLEANING => [self::STATUS_CLEAN, self::STATUS_DIRTY, self::STATUS_OUT_OF_SERVICE],
         self::STATUS_OCCUPIED => [self::STATUS_DIRTY, self::STATUS_OUT_OF_SERVICE],
         self::STATUS_OUT_OF_SERVICE => [self::STATUS_CLEAN, self::STATUS_DIRTY],
     ];
@@ -55,5 +59,10 @@ class Room extends Model
     public function statusHistory(): HasMany
     {
         return $this->hasMany(RoomStatusHistory::class);
+    }
+
+    public function housekeepingTasks(): HasMany
+    {
+        return $this->hasMany(HousekeepingTask::class);
     }
 }
