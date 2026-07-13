@@ -1,0 +1,83 @@
+name: API quality gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: PHP 8.3 quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+
+      - name: Validate Composer metadata
+        run: composer validate --strict --no-interaction
+
+      - name: Install locked dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Register PHP and PHPUnit problem matchers
+        run: |
+          echo "::add-matcher::${{ runner.tool_cache }}/php.json"
+          echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
+
+      - name: Check PHP syntax
+        run: find app bootstrap config database Modules routes tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Check code style
+        run: composer lint
+
+      - name: Run test suite
+        run: |
+          mkdir -p build/test-results
+          vendor/bin/phpunit --log-junit build/test-results/junit.xml
+
+      - name: Upload PHPUnit report
+        if: ${{ always() && hashFiles('build/test-results/junit.xml') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: phpunit-report
+          path: build/test-results/junit.xml
+          if-no-files-found: error
+          retention-days: 14
+
+  security:
+    name: Locked dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP and Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+
+      - name: Audit locked dependencies
+        run: composer audit --locked --no-interaction --abandoned=report
+        env:
+          COMPOSER_NO_AUDIT: 0

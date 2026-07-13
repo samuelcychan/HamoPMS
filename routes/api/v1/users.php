@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\User\Http\Controllers\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -9,12 +10,12 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth:sanctum')->prefix('users')->name('users.')->group(function () {
-    Route::get('/', [\Modules\User\Http\Controllers\UserController::class, 'index'])
+    Route::get('/', [UserController::class, 'index'])
         ->name('index');
 
-    Route::get('/{id}', [\Modules\User\Http\Controllers\UserController::class, 'show'])
+    Route::get('/{id}', [UserController::class, 'show'])
         ->name('show');
 
-    Route::put('/{id}', [\Modules\User\Http\Controllers\UserController::class, 'update'])
+    Route::put('/{id}', [UserController::class, 'update'])
         ->name('update');
 });
