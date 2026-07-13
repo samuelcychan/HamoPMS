@@ -51,7 +51,7 @@ class AdminUserManagementTest extends TestCase
 
         $userId = $response->json('data.id');
         $user = User::findOrFail($userId);
-        $this->assertTrue(Hash::check('password123', $user->password));
+        $this->assertTrue(Hash::check('StrongPassword1!', $user->password));
 
         Log::shouldHaveReceived('info')->with('admin.user.created', [
             'actor_id' => $this->globalAdmin->id,
@@ -230,8 +230,8 @@ class AdminUserManagementTest extends TestCase
         return [
             'name' => 'New User',
             'email' => 'new.user@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'StrongPassword1!',
+            'password_confirmation' => 'StrongPassword1!',
             'property_id' => $property->id,
             'role' => 'receptionist',
         ];

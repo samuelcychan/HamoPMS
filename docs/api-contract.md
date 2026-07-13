@@ -98,4 +98,6 @@ Maintenance ticket CRUD, escalation, assignment, history, and room inventory imp
 
 Localized guest email templates, event triggers, retry behavior, and delivery status logging are documented in [`docs/guest-notifications.md`](guest-notifications.md).
 
+Password policy, reset endpoints, account lockout, token revocation, and persistent auth audit events are documented in [`docs/auth-security.md`](auth-security.md).
+
 Cancellation windows, penalties, and non-refundable behavior are documented in [`docs/cancellations.md`](cancellations.md).

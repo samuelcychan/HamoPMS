@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use Modules\User\Services\UserAdministrationService;
 
 class AdminUserController extends Controller
@@ -38,10 +40,15 @@ class AdminUserController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $request->merge(['email' => Str::lower((string) $request->input('email'))]);
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => [
+                'required',
+                'confirmed',
+                PasswordRule::min(12)->mixedCase()->numbers()->symbols(),
+            ],
             'property_id' => ['required', 'integer', 'exists:properties,id'],
             'role' => ['required', 'string', Rule::exists('roles', 'slug')],
         ]);

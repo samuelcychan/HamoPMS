@@ -16,8 +16,8 @@ class AuthTest extends TestCase
         $response = $this->postJson('/api/v1/auth/register', [
             'name' => 'John Doe',
             'email' => 'john@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'StrongPassword1!',
+            'password_confirmation' => 'StrongPassword1!',
         ]);
 
         $response->assertStatus(201)
@@ -135,8 +135,8 @@ class AuthTest extends TestCase
         $this->postJson('/api/v1/auth/register', [
             'name' => 'Jane Doe',
             'email' => 'jane@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'StrongPassword1!',
+            'password_confirmation' => 'StrongPassword1!',
         ])->assertCreated();
 
         Log::shouldHaveReceived('info')

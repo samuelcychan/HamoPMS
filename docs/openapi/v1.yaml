@@ -82,6 +82,52 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '429':
           $ref: '#/components/responses/RateLimited'
+  /auth/forgot-password:
+    post:
+      tags: [Authentication]
+      operationId: requestPasswordReset
+      summary: Request an enumeration-safe password reset link
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Request accepted whether or not the account exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /auth/reset-password:
+    post:
+      tags: [Authentication]
+      operationId: resetPassword
+      summary: Reset a password with a valid broker token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset and existing API tokens revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
   /auth/logout:
     post:
       tags: [Authentication]
@@ -1581,11 +1627,12 @@ components:
           maxLength: 255
         password:
           type: string
-          minLength: 8
+          minLength: 12
           format: password
+          description: Must contain upper- and lowercase letters, a number, and a symbol.
         password_confirmation:
           type: string
-          minLength: 8
+          minLength: 12
           format: password
     LoginRequest:
       type: object
@@ -1597,6 +1644,33 @@ components:
           format: email
         password:
           type: string
+          format: password
+    ForgotPasswordRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+    ResetPasswordRequest:
+      type: object
+      additionalProperties: false
+      required: [email, token, password, password_confirmation]
+      properties:
+        email:
+          type: string
+          format: email
+        token:
+          type: string
+        password:
+          type: string
+          minLength: 12
+          format: password
+          description: Must contain upper- and lowercase letters, a number, and a symbol.
+        password_confirmation:
+          type: string
+          minLength: 12
           format: password
     CreateBookingRequest:
       type: object
