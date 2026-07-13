@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Modules\Property\Models\MaintenanceTicket;
 use Modules\Property\Models\Property;
 use Modules\Property\Models\Room;
 use Modules\Property\Services\RoomInventoryService;
@@ -91,6 +92,17 @@ class RoomController extends Controller
             || ($room->status === Room::STATUS_CLEANING && $validated['status'] === Room::STATUS_CLEAN)) {
             throw ValidationException::withMessages([
                 'status' => ['Use the housekeeping task lifecycle for cleaning transitions.'],
+            ]);
+        }
+
+        if ($room->status === Room::STATUS_OUT_OF_SERVICE
+            && $validated['status'] !== Room::STATUS_OUT_OF_SERVICE
+            && MaintenanceTicket::query()
+                ->where('room_id', $room->id)
+                ->whereIn('status', MaintenanceTicket::ACTIVE_STATUSES)
+                ->exists()) {
+            throw ValidationException::withMessages([
+                'status' => ['Resolve or delete the active maintenance ticket to restore this room.'],
             ]);
         }
 

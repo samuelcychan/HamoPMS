@@ -65,4 +65,9 @@ class Room extends Model
     {
         return $this->hasMany(HousekeepingTask::class);
     }
+
+    public function maintenanceTickets(): HasMany
+    {
+        return $this->hasMany(MaintenanceTicket::class);
+    }
 }
