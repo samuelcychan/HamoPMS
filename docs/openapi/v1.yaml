@@ -33,6 +33,8 @@ tags:
     description: Property-scoped operational and occupancy reports with JSON or CSV output.
   - name: Housekeeping
     description: Checkout-created room turnaround tasks and cleaning transitions.
+  - name: Maintenance
+    description: Room maintenance tickets, escalation, assignment, and inventory blocking.
 paths:
   /auth/register:
     post:
@@ -432,6 +434,263 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CancellationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /properties/{propertyId}/maintenance-tickets:
+    get:
+      tags: [Maintenance]
+      operationId: listMaintenanceTickets
+      summary: List a property's maintenance board
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, assigned, in_progress, resolved]
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [normal, high, urgent]
+        - name: escalation_status
+          in: query
+          schema:
+            type: string
+            enum: [none, escalated, critical]
+        - name: assigned_to
+          in: query
+          schema:
+            $ref: '#/components/schemas/Identifier'
+        - name: room_id
+          in: query
+          schema:
+            $ref: '#/components/schemas/Identifier'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Paginated maintenance tickets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceTicketCollectionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Maintenance]
+      operationId: createMaintenanceTicket
+      summary: Open a ticket and take a vacant room out of service
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaintenanceTicketCreateRequest'
+      responses:
+        '201':
+          description: Ticket opened and room blocked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceTicketResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /properties/{propertyId}/maintenance-tickets/{ticketId}:
+    parameters:
+      - $ref: '#/components/parameters/PropertyId'
+      - $ref: '#/components/parameters/MaintenanceTicketId'
+    get:
+      tags: [Maintenance]
+      operationId: getMaintenanceTicket
+      summary: Retrieve a maintenance ticket
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Maintenance ticket
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceTicketResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Maintenance]
+      operationId: updateMaintenanceTicket
+      summary: Update ticket details, priority, or escalation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaintenanceTicketUpdateRequest'
+      responses:
+        '200':
+          description: Updated maintenance ticket
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceTicketResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Maintenance]
+      operationId: deleteMaintenanceTicket
+      summary: Delete a ticket and restore an unresolved room's prior status
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Ticket deleted
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /properties/{propertyId}/maintenance-tickets/{ticketId}/assignment:
+    patch:
+      tags: [Maintenance]
+      operationId: assignMaintenanceTicket
+      summary: Assign or reassign an open maintenance ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+        - $ref: '#/components/parameters/MaintenanceTicketId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaintenanceAssignmentRequest'
+      responses:
+        '200':
+          description: Assigned ticket
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceTicketResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /properties/{propertyId}/maintenance-tickets/{ticketId}/start:
+    post:
+      tags: [Maintenance]
+      operationId: startMaintenanceTicket
+      summary: Start an assigned maintenance ticket
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+        - $ref: '#/components/parameters/MaintenanceTicketId'
+      responses:
+        '200':
+          description: In-progress ticket
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceTicketResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /properties/{propertyId}/maintenance-tickets/{ticketId}/resolve:
+    post:
+      tags: [Maintenance]
+      operationId: resolveMaintenanceTicket
+      summary: Resolve a ticket and restore the room to clean inventory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+        - $ref: '#/components/parameters/MaintenanceTicketId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaintenanceResolutionRequest'
+      responses:
+        '200':
+          description: Resolved ticket and clean room
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceTicketResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /properties/{propertyId}/maintenance-tickets/{ticketId}/history:
+    get:
+      tags: [Maintenance]
+      operationId: listMaintenanceTicketHistory
+      summary: List immutable ticket lifecycle history
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+        - $ref: '#/components/parameters/MaintenanceTicketId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Paginated ticket history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceTicketHistoryCollectionResponse'
         '401':
           $ref: '#/components/responses/Unauthenticated'
         '403':
@@ -1084,6 +1343,12 @@ components:
       required: true
       schema:
         $ref: '#/components/schemas/Identifier'
+    MaintenanceTicketId:
+      name: ticketId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Identifier'
     ChargeTypeId:
       name: chargeTypeId
       in: path
@@ -1489,6 +1754,57 @@ components:
           type: number
           exclusiveMinimum: 0
           maximum: 9999999999.99
+    MaintenanceTicketCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [room_id, title, description]
+      properties:
+        room_id:
+          $ref: '#/components/schemas/Identifier'
+        title:
+          type: string
+          maxLength: 160
+        description:
+          type: string
+          maxLength: 5000
+        priority:
+          type: string
+          enum: [normal, high, urgent]
+          default: normal
+    MaintenanceTicketUpdateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          maxLength: 160
+        description:
+          type: string
+          maxLength: 5000
+        priority:
+          type: string
+          enum: [normal, high, urgent]
+        escalation_status:
+          type: string
+          enum: [none, escalated, critical]
+        escalation_reason:
+          type: [string, 'null']
+          maxLength: 2000
+    MaintenanceAssignmentRequest:
+      type: object
+      additionalProperties: false
+      required: [assigned_to]
+      properties:
+        assigned_to:
+          $ref: '#/components/schemas/Identifier'
+    MaintenanceResolutionRequest:
+      type: object
+      additionalProperties: false
+      required: [resolution_notes]
+      properties:
+        resolution_notes:
+          type: string
+          maxLength: 5000
     HousekeepingAssignmentRequest:
       type: object
       additionalProperties: false
@@ -1559,6 +1875,110 @@ components:
         status:
           type: string
           enum: [clean, dirty, cleaning, occupied, out_of_service]
+    MaintenanceTicket:
+      type: object
+      required:
+        - id
+        - property_id
+        - room_id
+        - title
+        - description
+        - status
+        - priority
+        - escalation_status
+        - room_status_before_maintenance
+        - created_at
+        - updated_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Identifier'
+        property_id:
+          $ref: '#/components/schemas/Identifier'
+        room_id:
+          $ref: '#/components/schemas/Identifier'
+        created_by:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        assigned_to:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        assigned_by:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        escalated_by:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        resolved_by:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [open, assigned, in_progress, resolved]
+        priority:
+          type: string
+          enum: [normal, high, urgent]
+        escalation_status:
+          type: string
+          enum: [none, escalated, critical]
+        room_status_before_maintenance:
+          type: string
+          enum: [clean, dirty]
+        assigned_at:
+          type: [string, 'null']
+          format: date-time
+        started_at:
+          type: [string, 'null']
+          format: date-time
+        escalated_at:
+          type: [string, 'null']
+          format: date-time
+        resolved_at:
+          type: [string, 'null']
+          format: date-time
+        escalation_reason:
+          type: [string, 'null']
+        resolution_notes:
+          type: [string, 'null']
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    MaintenanceTicketHistory:
+      type: object
+      required: [id, maintenance_ticket_id, event, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Identifier'
+        maintenance_ticket_id:
+          $ref: '#/components/schemas/Identifier'
+        event:
+          type: string
+          enum: [created, updated, escalated, assigned, started, resolved, deleted]
+        from_status:
+          type: [string, 'null']
+        to_status:
+          type: [string, 'null']
+        changed_by:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        details:
+          type: [object, 'null']
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
     HousekeepingTask:
       type: object
       required:
@@ -2297,6 +2717,40 @@ components:
                   pattern: '^\d+\.\d{2}$'
                 housekeeping_task_id:
                   $ref: '#/components/schemas/Identifier'
+    MaintenanceTicketResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/MaintenanceTicket'
+    MaintenanceTicketCollectionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaintenanceTicket'
+        meta:
+          type: object
+          required: [pagination]
+          properties:
+            pagination:
+              $ref: '#/components/schemas/Pagination'
+    MaintenanceTicketHistoryCollectionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaintenanceTicketHistory'
+        meta:
+          type: object
+          required: [pagination]
+          properties:
+            pagination:
+              $ref: '#/components/schemas/Pagination'
     HousekeepingTaskResponse:
       type: object
       required: [data]

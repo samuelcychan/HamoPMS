@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Folio\Http\Controllers\AncillaryChargeTypeController;
 use Modules\Property\Http\Controllers\HousekeepingTaskController;
+use Modules\Property\Http\Controllers\MaintenanceTicketController;
 use Modules\Property\Http\Controllers\PropertyController;
 use Modules\Property\Http\Controllers\RoomController;
 use Modules\Property\Http\Controllers\RoomTypeController;
@@ -23,6 +24,34 @@ Route::middleware(['auth:sanctum', 'active'])->prefix('properties')->name('prope
         ->name('store');
 
     Route::middleware('property.context')->prefix('/{propertyId}')->group(function () {
+        Route::get('/maintenance-tickets', [MaintenanceTicketController::class, 'index'])
+            ->middleware('permission:rooms.read')
+            ->name('maintenance-tickets.index');
+        Route::post('/maintenance-tickets', [MaintenanceTicketController::class, 'store'])
+            ->middleware('permission:rooms.write')
+            ->name('maintenance-tickets.store');
+        Route::get('/maintenance-tickets/{ticketId}', [MaintenanceTicketController::class, 'show'])
+            ->middleware('permission:rooms.read')
+            ->name('maintenance-tickets.show');
+        Route::put('/maintenance-tickets/{ticketId}', [MaintenanceTicketController::class, 'update'])
+            ->middleware('permission:rooms.write')
+            ->name('maintenance-tickets.update');
+        Route::delete('/maintenance-tickets/{ticketId}', [MaintenanceTicketController::class, 'destroy'])
+            ->middleware('permission:rooms.write')
+            ->name('maintenance-tickets.destroy');
+        Route::patch('/maintenance-tickets/{ticketId}/assignment', [MaintenanceTicketController::class, 'assign'])
+            ->middleware('permission:rooms.write')
+            ->name('maintenance-tickets.assignment.update');
+        Route::post('/maintenance-tickets/{ticketId}/start', [MaintenanceTicketController::class, 'start'])
+            ->middleware('permission:rooms.write')
+            ->name('maintenance-tickets.start');
+        Route::post('/maintenance-tickets/{ticketId}/resolve', [MaintenanceTicketController::class, 'resolve'])
+            ->middleware('permission:rooms.write')
+            ->name('maintenance-tickets.resolve');
+        Route::get('/maintenance-tickets/{ticketId}/history', [MaintenanceTicketController::class, 'history'])
+            ->middleware('permission:rooms.read')
+            ->name('maintenance-tickets.history.index');
+
         Route::get('/housekeeping-tasks', [HousekeepingTaskController::class, 'index'])
             ->middleware('permission:rooms.read')
             ->name('housekeeping-tasks.index');

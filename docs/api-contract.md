@@ -94,4 +94,6 @@ Daily revenue, tax, payment-method reconciliation, and immutable period-close be
 
 Checkout-created housekeeping tasks, assignment, cleaning transitions, SLAs, and completion behavior are documented in [`docs/housekeeping.md`](housekeeping.md).
 
+Maintenance ticket CRUD, escalation, assignment, history, and room inventory impact are documented in [`docs/maintenance.md`](maintenance.md).
+
 Cancellation windows, penalties, and non-refundable behavior are documented in [`docs/cancellations.md`](cancellations.md).
