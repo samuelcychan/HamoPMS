@@ -3,17 +3,20 @@
 namespace Modules\Property\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Modules\Property\Models\Property;
 
 class PropertyController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $properties = Property::paginate(15);
+        $request->validate(['per_page' => ['sometimes', 'integer', 'min:1', 'max:100']]);
+        $properties = Property::paginate($request->integer('per_page', 15));
 
-        return response()->json($properties);
+        return ApiResponse::paginated($properties);
     }
 
     public function store(Request $request): JsonResponse
@@ -27,14 +30,14 @@ class PropertyController extends Controller
 
         $property = Property::create($validated);
 
-        return response()->json($property, 201);
+        return ApiResponse::success($property, 201);
     }
 
     public function show(string $id): JsonResponse
     {
         $property = Property::findOrFail($id);
 
-        return response()->json($property);
+        return ApiResponse::success($property);
     }
 
     public function update(Request $request, string $id): JsonResponse
@@ -50,14 +53,14 @@ class PropertyController extends Controller
 
         $property->update($validated);
 
-        return response()->json($property);
+        return ApiResponse::success($property);
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(string $id): Response
     {
         $property = Property::findOrFail($id);
         $property->delete();
 
-        return response()->json(null, 204);
+        return response()->noContent();
     }
 }

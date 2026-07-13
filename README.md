@@ -11,6 +11,7 @@ A Laravel 12 API-first backend for the Hamo Property Management System.
 - [Quick Start (Local)](#quick-start-local)
 - [Environment Strategy](#environment-strategy)
 - [API Routing](#api-routing)
+- [API Contract](#api-contract)
 - [Domain Modules](#domain-modules)
 - [Running Tests](#running-tests)
 
@@ -156,6 +157,10 @@ All routes are prefixed with `/api`. Versioned routes live under `/api/v1/`.
 | `POST` | `/api/v1/bookings/{booking_id}/folio/line-items` | Post a charge or tax entry to folio |
 
 All endpoints except `/api/health`, `/api/v1/auth/register`, and `/api/v1/auth/login` require a `Bearer` token from Sanctum.
+
+## API Contract
+
+API success, error, validation, pagination, filtering, and versioning conventions are defined in [the API contract](docs/api-contract.md). The current public baseline is `/api/v1`.
 
 ---
 

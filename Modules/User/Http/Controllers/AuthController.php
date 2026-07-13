@@ -4,6 +4,7 @@ namespace Modules\User\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -30,7 +31,7 @@ class AuthController extends Controller
 
         Log::info('auth.register', ['user_id' => $user->id]);
 
-        return response()->json([
+        return ApiResponse::success([
             'user' => $user,
             'token' => $token,
         ], 201);
@@ -60,7 +61,7 @@ class AuthController extends Controller
 
         Log::info('auth.login', ['user_id' => $user->id]);
 
-        return response()->json([
+        return ApiResponse::success([
             'user' => $user,
             'token' => $token,
         ]);
@@ -77,11 +78,11 @@ class AuthController extends Controller
             $token->delete();
         }
 
-        return response()->json(['message' => 'Logged out successfully.']);
+        return ApiResponse::success(['message' => 'Logged out successfully.']);
     }
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json($request->user());
+        return ApiResponse::success($request->user());
     }
 }

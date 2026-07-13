@@ -54,8 +54,10 @@ class FolioTest extends TestCase
 
         $response->assertOk()
             ->assertJsonStructure([
-                'folio' => ['id', 'booking_id', 'status', 'currency'],
-                'balance',
+                'data' => [
+                    'folio' => ['id', 'booking_id', 'status', 'currency'],
+                    'balance',
+                ],
             ]);
     }
 
@@ -80,7 +82,7 @@ class FolioTest extends TestCase
             ]);
 
         $response->assertCreated()
-            ->assertJsonStructure(['id', 'folio_id', 'type', 'description', 'amount', 'posted_at'])
+            ->assertJsonStructure(['data' => ['id', 'folio_id', 'type', 'description', 'amount', 'posted_at']])
             ->assertJsonFragment(['type' => 'room_charge', 'description' => 'Room rate - Night 1']);
 
         $this->assertDatabaseHas('folio_line_items', [
@@ -165,7 +167,7 @@ class FolioTest extends TestCase
             ]);
 
         $response->assertCreated();
-        $this->assertNotNull($response->json('posted_at'));
+        $this->assertNotNull($response->json('data.posted_at'));
     }
 
     public function test_cannot_access_another_users_folio(): void

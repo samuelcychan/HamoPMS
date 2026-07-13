@@ -3,17 +3,21 @@
 namespace Modules\Booking\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Modules\Booking\Models\Booking;
 
 class BookingController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $bookings = Booking::where('user_id', $request->user()->id)->paginate(15);
+        $request->validate(['per_page' => ['sometimes', 'integer', 'min:1', 'max:100']]);
+        $bookings = Booking::where('user_id', $request->user()->id)
+            ->paginate($request->integer('per_page', 15));
 
-        return response()->json($bookings);
+        return ApiResponse::paginated($bookings);
     }
 
     public function store(Request $request): JsonResponse
@@ -29,14 +33,14 @@ class BookingController extends Controller
         $validated['user_id'] = $request->user()->id;
         $booking = Booking::create($validated);
 
-        return response()->json($booking, 201);
+        return ApiResponse::success($booking, 201);
     }
 
     public function show(Request $request, string $id): JsonResponse
     {
         $booking = Booking::where('user_id', $request->user()->id)->findOrFail($id);
 
-        return response()->json($booking);
+        return ApiResponse::success($booking);
     }
 
     public function update(Request $request, string $id): JsonResponse
@@ -53,14 +57,14 @@ class BookingController extends Controller
 
         $booking->update($validated);
 
-        return response()->json($booking);
+        return ApiResponse::success($booking);
     }
 
-    public function destroy(Request $request, string $id): JsonResponse
+    public function destroy(Request $request, string $id): Response
     {
         $booking = Booking::where('user_id', $request->user()->id)->findOrFail($id);
         $booking->delete();
 
-        return response()->json(null, 204);
+        return response()->noContent();
     }
 }

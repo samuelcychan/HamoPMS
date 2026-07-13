@@ -3,6 +3,7 @@
 namespace Modules\Folio\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Booking\Models\Booking;
@@ -21,7 +22,7 @@ class FolioController extends Controller
 
         $folio->load('lineItems');
 
-        return response()->json([
+        return ApiResponse::success([
             'folio' => $folio,
             'balance' => $folio->balance(),
         ]);

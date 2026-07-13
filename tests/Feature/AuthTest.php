@@ -21,7 +21,7 @@ class AuthTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['user', 'token']);
+            ->assertJsonStructure(['data' => ['user', 'token']]);
     }
 
     public function test_user_can_login(): void
@@ -36,7 +36,7 @@ class AuthTest extends TestCase
         ]);
 
         $response->assertOk()
-            ->assertJsonStructure(['user', 'token']);
+            ->assertJsonStructure(['data' => ['user', 'token']]);
     }
 
     public function test_authenticated_user_can_get_profile(): void
@@ -48,7 +48,7 @@ class AuthTest extends TestCase
             ->getJson('/api/v1/auth/me');
 
         $response->assertOk()
-            ->assertJson(['id' => $user->id]);
+            ->assertJsonPath('data.id', $user->id);
     }
 
     public function test_authenticated_user_can_logout(): void
@@ -61,7 +61,13 @@ class AuthTest extends TestCase
             ->postJson('/api/v1/auth/logout');
 
         $response->assertOk()
-            ->assertJson(['message' => 'Logged out successfully.']);
+            ->assertJsonPath('data.message', 'Logged out successfully.');
+
+        $this->assertDatabaseMissing('personal_access_tokens', [
+            'id' => $accessToken->accessToken->id,
+        ]);
+
+        $this->app['auth']->forgetGuards();
 
         $this->assertDatabaseMissing('personal_access_tokens', [
             'id' => $accessToken->accessToken->id,

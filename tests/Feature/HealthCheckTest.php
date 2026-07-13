@@ -12,8 +12,10 @@ class HealthCheckTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJson([
-                'status' => 'ok',
-                'version' => 'v1',
+                'data' => [
+                    'status' => 'ok',
+                    'version' => 'v1',
+                ],
             ]);
     }
 }
