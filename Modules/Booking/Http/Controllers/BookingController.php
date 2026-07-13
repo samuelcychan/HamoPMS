@@ -7,6 +7,7 @@ use App\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Validation\Rule;
 use Modules\Booking\Models\Booking;
 use Modules\Booking\Services\ReservationService;
 
@@ -27,6 +28,16 @@ class BookingController extends Controller
     {
         $validated = $request->validate([
             'property_id' => ['required', 'exists:properties,id'],
+            'room_type_id' => [
+                'required',
+                'integer',
+                Rule::exists('room_types', 'id')->where(
+                    fn ($query) => $query
+                        ->where('property_id', $request->input('property_id'))
+                        ->where('is_active', true)
+                        ->whereNull('deleted_at'),
+                ),
+            ],
             'check_in' => ['required', 'date', 'after_or_equal:today'],
             'check_out' => ['required', 'date', 'after:check_in'],
             'guests' => ['required', 'integer', 'min:1'],

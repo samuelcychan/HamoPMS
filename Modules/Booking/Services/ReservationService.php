@@ -5,15 +5,18 @@ namespace Modules\Booking\Services;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Modules\Booking\Models\Booking;
-use Modules\Property\Models\Property;
+use Modules\Property\Models\Room;
+use Modules\Property\Models\RoomType;
 
 class ReservationService
 {
+    public function __construct(private readonly InventoryCounter $inventory) {}
+
     /**
      * Create and confirm a reservation, or return null when inventory is unavailable.
      *
-     * The property lock serializes availability checks for the same property. This
-     * remains safe even when there is no existing booking row available to lock.
+     * The room-type lock serializes availability checks for the same inventory
+     * pool, including when there is no existing booking row available to lock.
      */
     public function createConfirmed(int $userId, array $attributes): ?Booking
     {
@@ -21,19 +24,30 @@ class ReservationService
             $checkIn = CarbonImmutable::parse($attributes['check_in'])->startOfDay();
             $checkOut = CarbonImmutable::parse($attributes['check_out'])->startOfDay();
 
-            Property::query()
-                ->whereKey($attributes['property_id'])
+            $roomType = RoomType::query()
+                ->whereKey($attributes['room_type_id'])
+                ->where('property_id', $attributes['property_id'])
+                ->where('is_active', true)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $inventoryUnavailable = Booking::query()
-                ->where('property_id', $attributes['property_id'])
+            $sellableInventory = $roomType->rooms()
+                ->where('status', '!=', Room::STATUS_OUT_OF_SERVICE)
+                ->count();
+
+            $overlappingBookings = Booking::query()
+                ->where('room_type_id', $roomType->id)
                 ->whereIn('status', Booking::INVENTORY_BLOCKING_STATUSES)
                 ->where('check_in', '<', $checkOut)
                 ->where('check_out', '>', $checkIn)
-                ->exists();
+                ->get(['check_in', 'check_out']);
+            $reservedInventory = $this->inventory->peakReservedInventory(
+                $overlappingBookings,
+                $checkIn,
+                $checkOut,
+            );
 
-            if ($inventoryUnavailable) {
+            if ($reservedInventory >= $sellableInventory) {
                 return null;
             }
 

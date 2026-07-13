@@ -5,6 +5,7 @@ namespace Modules\Property\Services;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Modules\Property\Models\Room;
+use Modules\Property\Models\RoomType;
 
 class RoomInventoryService
 {
@@ -35,6 +36,16 @@ class RoomInventoryService
         ?string $reason = null,
     ): Room {
         return DB::transaction(function () use ($propertyId, $roomId, $toStatus, $userId, $reason): Room {
+            $roomTypeId = Room::query()
+                ->where('property_id', $propertyId)
+                ->findOrFail($roomId)
+                ->room_type_id;
+
+            RoomType::query()
+                ->whereKey($roomTypeId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
             $room = Room::query()
                 ->where('property_id', $propertyId)
                 ->lockForUpdate()
