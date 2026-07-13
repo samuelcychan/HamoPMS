@@ -928,6 +928,36 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /properties/{propertyId}/housekeeping-tasks/shift-report:
+    get:
+      tags: [Housekeeping]
+      operationId: getHousekeepingShiftReport
+      summary: Summarize daily housekeeping SLA and completion performance
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Daily housekeeping shift summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HousekeepingShiftReportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /properties/{propertyId}/housekeeping-tasks/{taskId}:
     get:
       tags: [Housekeeping]
@@ -2453,6 +2483,56 @@ components:
         updated_at:
           type: string
           format: date-time
+    HousekeepingShiftReport:
+      type: object
+      required:
+        - date
+        - total_tasks
+        - status
+        - priority
+        - overdue_tasks
+        - completed_tasks
+        - completed_on_time
+        - completed_late
+        - average_turnaround_minutes
+      properties:
+        date:
+          type: string
+          format: date
+        total_tasks:
+          type: integer
+          minimum: 0
+        status:
+          type: object
+          required: [pending, assigned, in_progress, completed]
+          properties:
+            pending: {type: integer, minimum: 0}
+            assigned: {type: integer, minimum: 0}
+            in_progress: {type: integer, minimum: 0}
+            completed: {type: integer, minimum: 0}
+        priority:
+          type: object
+          required: [low, normal, high, urgent]
+          properties:
+            low: {type: integer, minimum: 0}
+            normal: {type: integer, minimum: 0}
+            high: {type: integer, minimum: 0}
+            urgent: {type: integer, minimum: 0}
+        overdue_tasks:
+          type: integer
+          minimum: 0
+        completed_tasks:
+          type: integer
+          minimum: 0
+        completed_on_time:
+          type: integer
+          minimum: 0
+        completed_late:
+          type: integer
+          minimum: 0
+        average_turnaround_minutes:
+          type: [number, 'null']
+          minimum: 0
     BookingStatus:
       type: string
       enum: [pending, confirmed, checked_in, cancelled, completed]
@@ -3236,6 +3316,12 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/HousekeepingTask'
+    HousekeepingShiftReportResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/HousekeepingShiftReport'
     RoomResponse:
       type: object
       required: [data]

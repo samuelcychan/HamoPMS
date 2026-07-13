@@ -4,6 +4,10 @@ Successful check-out creates one pending housekeeping task for the released room
 
 Property-scoped users with `rooms.read` can list or inspect tasks. The board supports `status`, `assigned_to`, and pagination filters and sorts by priority, due time, and identifier. Users with `rooms.write` can assign tasks to active staff who also have room-write access for that property.
 
+## Shift report
+
+`GET /api/v1/properties/{propertyId}/housekeeping-tasks/shift-report?date=YYYY-MM-DD` summarizes tasks created during the selected property day. It returns task counts by status and priority, overdue and on-time/late completion counts, and average completion turnaround in minutes. The date defaults to today and the same `rooms.read` property authorization as the live board applies.
+
 ## Transitions
 
 1. `PATCH /api/v1/properties/{propertyId}/housekeeping-tasks/{taskId}/assignment` changes `pending → assigned` and records the dispatcher and assignment time.

@@ -56,6 +56,9 @@ Route::middleware(['auth:sanctum', 'active'])->prefix('properties')->name('prope
         Route::get('/housekeeping-tasks', [HousekeepingTaskController::class, 'index'])
             ->middleware('permission:rooms.read')
             ->name('housekeeping-tasks.index');
+        Route::get('/housekeeping-tasks/shift-report', [HousekeepingTaskController::class, 'shiftReport'])
+            ->middleware('permission:rooms.read')
+            ->name('housekeeping-tasks.shift-report');
         Route::get('/housekeeping-tasks/{taskId}', [HousekeepingTaskController::class, 'show'])
             ->middleware('permission:rooms.read')
             ->name('housekeeping-tasks.show');
