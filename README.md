@@ -205,3 +205,5 @@ php artisan test --coverage
 ```
 
 Tests use an **in-memory SQLite** database (`DB_DATABASE=:memory:`) configured in `phpunit.xml`, so no separate test database setup is needed.
+
+The end-to-end coverage model and deterministic multi-property CI seed strategy are documented in [the testing strategy](docs/testing-strategy.md).
