@@ -1,0 +1,6 @@
+apis:
+  hamo@v1:
+    root: docs/openapi/v1.yaml
+
+extends:
+  - recommended

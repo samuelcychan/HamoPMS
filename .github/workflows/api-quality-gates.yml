@@ -30,6 +30,11 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      - name: Set up Node.js for OpenAPI validation
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
       - name: Validate Composer metadata
         run: composer validate --strict --no-interaction
 
@@ -46,6 +51,9 @@ jobs:
 
       - name: Check code style
         run: composer lint
+
+      - name: Validate OpenAPI contract
+        run: npx --yes @redocly/cli@2.38.0 lint hamo@v1 --config redocly.yaml
 
       - name: Run test suite
         run: |
