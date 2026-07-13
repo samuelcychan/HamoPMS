@@ -21,6 +21,7 @@ class ReservationModificationService
         private readonly InventoryCounter $inventory,
         private readonly ReservationRateCalculator $rates,
         private readonly ReservationFolioService $folios,
+        private readonly BookingAuditSnapshot $audit,
     ) {}
 
     public function modify(int $bookingId, int $actorId, array $attributes): ?array
@@ -34,7 +35,7 @@ class ReservationModificationService
                 ]);
             }
 
-            $before = $this->snapshot($booking);
+            $before = $this->audit->capture($booking);
             $checkIn = CarbonImmutable::parse($attributes['check_in'] ?? $booking->check_in)->startOfDay();
             $checkOut = CarbonImmutable::parse($attributes['check_out'] ?? $booking->check_out)->startOfDay();
 
@@ -125,7 +126,7 @@ class ReservationModificationService
             $modification = $booking->modifications()->create([
                 'actor_id' => $actorId,
                 'before' => $before,
-                'after' => $this->snapshot($booking->refresh()),
+                'after' => $this->audit->capture($booking->refresh()),
                 'rate_difference' => $this->rates->formatCents($differenceCents),
             ]);
             $folio = $this->folios->ensureRoomRateBaseline($booking, $oldTotalCents);
@@ -145,19 +146,5 @@ class ReservationModificationService
                 'rate_difference' => $this->rates->formatCents($differenceCents),
             ];
         });
-    }
-
-    private function snapshot(Booking $booking): array
-    {
-        return [
-            'room_type_id' => (int) $booking->room_type_id,
-            'check_in' => $booking->check_in->toDateString(),
-            'check_out' => $booking->check_out->toDateString(),
-            'guests' => (int) $booking->guests,
-            'notes' => $booking->notes,
-            'special_requests' => $booking->special_requests,
-            'nightly_rate' => $booking->nightly_rate,
-            'status' => $booking->status,
-        ];
     }
 }

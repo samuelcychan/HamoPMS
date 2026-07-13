@@ -19,6 +19,8 @@ tags:
     description: Reservation creation, retrieval, updates, and deletion.
   - name: Check-in
     description: Front-desk room assignment and guest arrival processing.
+  - name: In-stay modifications
+    description: Checked-in room moves, extensions, and early departures.
 paths:
   /auth/register:
     post:
@@ -308,6 +310,72 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /bookings/{bookingId}/room-move:
+    parameters:
+      - $ref: '#/components/parameters/BookingId'
+    post:
+      tags: [In-stay modifications]
+      operationId: moveCheckedInReservationRoom
+      summary: Move a checked-in reservation to another room
+      description: Reassigns room inventory and adjusts the folio for remaining nights atomically.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomMoveRequest'
+      responses:
+        '200':
+          description: Reservation moved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StayChangeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/InventoryUnavailable'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /bookings/{bookingId}/departure-adjustment:
+    parameters:
+      - $ref: '#/components/parameters/BookingId'
+    post:
+      tags: [In-stay modifications]
+      operationId: adjustCheckedInReservationDeparture
+      summary: Extend a checked-in stay or schedule an early departure
+      description: Checks added-night inventory and appends the signed folio adjustment atomically.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartureAdjustmentRequest'
+      responses:
+        '200':
+          description: Departure adjusted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StayChangeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/InventoryUnavailable'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /bookings/{bookingId}/cancel:
     parameters:
       - $ref: '#/components/parameters/BookingId'
@@ -524,6 +592,21 @@ components:
       properties:
         room_id:
           $ref: '#/components/schemas/Identifier'
+    RoomMoveRequest:
+      type: object
+      additionalProperties: false
+      required: [room_id]
+      properties:
+        room_id:
+          $ref: '#/components/schemas/Identifier'
+    DepartureAdjustmentRequest:
+      type: object
+      additionalProperties: false
+      required: [check_out]
+      properties:
+        check_out:
+          type: string
+          format: date
     User:
       type: object
       required: [id, name, email, created_at, updated_at]
@@ -755,6 +838,28 @@ components:
               required: [id, rate_difference]
               properties:
                 id:
+                  $ref: '#/components/schemas/Identifier'
+                rate_difference:
+                  type: string
+                  pattern: '^-?\d+\.\d{2}$'
+    StayChangeResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/Booking'
+        meta:
+          type: object
+          required: [stay_change]
+          properties:
+            stay_change:
+              type: object
+              required: [type, modification_id, rate_difference]
+              properties:
+                type:
+                  type: string
+                  enum: [room_move, extension, early_departure]
+                modification_id:
                   $ref: '#/components/schemas/Identifier'
                 rate_difference:
                   type: string
