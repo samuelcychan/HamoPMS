@@ -4,31 +4,36 @@ namespace Modules\Property\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Property extends Model
+class RoomType extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'property_id',
         'name',
-        'address',
-        'type',
+        'code',
         'description',
+        'max_occupancy',
+        'base_rate',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
+            'max_occupancy' => 'integer',
+            'base_rate' => 'decimal:2',
+            'is_active' => 'boolean',
         ];
     }
 
-    public function roomTypes(): HasMany
+    public function property(): BelongsTo
     {
-        return $this->hasMany(RoomType::class);
+        return $this->belongsTo(Property::class);
     }
 
     public function rooms(): HasMany
