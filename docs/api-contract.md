@@ -2,6 +2,14 @@
 
 The public API baseline is version `v1`. Versioned resources use the `/api/v1` prefix. Breaking contract changes require a new URL version; additive fields may be introduced within `v1`.
 
+The machine-readable Sprint 1 contract is published at [`docs/openapi/v1.yaml`](openapi/v1.yaml). CI validates it with the pinned Redocly CLI configuration in [`redocly.yaml`](../redocly.yaml).
+
+Validate the contract locally with Node.js 22.12 or newer:
+
+```bash
+npx --yes @redocly/cli@2.38.0 lint hamo@v1 --config redocly.yaml
+```
+
 ## Success responses
 
 Successful responses use a `data` envelope:

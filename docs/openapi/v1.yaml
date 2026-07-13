@@ -1,0 +1,776 @@
+openapi: 3.1.0
+info:
+  title: HamoPMS API
+  version: 1.0.0
+  license:
+    name: MIT
+    identifier: MIT
+  description: |
+    Versioned contract for the Sprint 1 HamoPMS endpoints. All successful JSON
+    responses use a `data` envelope and errors use the shared `error` envelope.
+servers:
+  - url: /api/v1
+tags:
+  - name: Authentication
+    description: Registration, token issuance, revocation, and current-user access.
+  - name: Availability
+    description: Property-scoped room-type availability searches.
+  - name: Reservations
+    description: Reservation creation, retrieval, updates, and deletion.
+  - name: Check-in
+    description: Front-desk room assignment and guest arrival processing.
+paths:
+  /auth/register:
+    post:
+      tags: [Authentication]
+      operationId: registerUser
+      summary: Register a user and issue an API token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /auth/login:
+    post:
+      tags: [Authentication]
+      operationId: loginUser
+      summary: Authenticate and issue an API token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      operationId: logoutUser
+      summary: Revoke the current API token
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Token revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /auth/me:
+    get:
+      tags: [Authentication]
+      operationId: getAuthenticatedUser
+      summary: Return the authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+  /availability:
+    get:
+      tags: [Availability]
+      operationId: searchAvailability
+      summary: Search available room types for a stay
+      description: Supply the property through `property_id` or `X-Property-ID`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyHeader'
+        - name: property_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Identifier'
+        - name: check_in
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: check_out
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: occupancy
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Matching room types and inventory counts
+          headers:
+            Server-Timing:
+              schema:
+                type: string
+            X-Response-Time-Target:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityResponse'
+        '400':
+          $ref: '#/components/responses/PropertyContextRequired'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/PropertyContextMismatch'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /bookings:
+    get:
+      tags: [Reservations]
+      operationId: listReservations
+      summary: List reservations for the authenticated user and property
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequiredPropertyHeader'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Paginated reservations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingCollectionResponse'
+        '400':
+          $ref: '#/components/responses/PropertyContextRequired'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Reservations]
+      operationId: createReservation
+      summary: Create a confirmed reservation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBookingRequest'
+      responses:
+        '201':
+          description: Reservation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/InventoryUnavailable'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /bookings/{bookingId}:
+    parameters:
+      - $ref: '#/components/parameters/BookingId'
+    get:
+      tags: [Reservations]
+      operationId: getReservation
+      summary: Return a reservation
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Reservation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Reservations]
+      operationId: updateReservation
+      summary: Update a reservation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBookingRequest'
+      responses:
+        '200':
+          description: Updated reservation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Reservations]
+      operationId: deleteReservation
+      summary: Delete a reservation
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Reservation deleted
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /bookings/{bookingId}/check-in:
+    parameters:
+      - $ref: '#/components/parameters/BookingId'
+    post:
+      tags: [Check-in]
+      operationId: checkInReservation
+      summary: Assign a ready room and check in a confirmed reservation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+      responses:
+        '200':
+          description: Checked-in reservation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Sanctum token
+  parameters:
+    BookingId:
+      name: bookingId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Identifier'
+    PropertyHeader:
+      name: X-Property-ID
+      in: header
+      required: false
+      description: Property context; must match any property identifier in the request.
+      schema:
+        $ref: '#/components/schemas/Identifier'
+    RequiredPropertyHeader:
+      name: X-Property-ID
+      in: header
+      required: true
+      description: Property context for a collection request.
+      schema:
+        $ref: '#/components/schemas/Identifier'
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPage:
+      name: per_page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 15
+  responses:
+    PropertyContextRequired:
+      description: A property context was not supplied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthenticated:
+      description: Authentication is required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: The user lacks access or permission
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: The resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    PropertyContextMismatch:
+      description: Property identifiers in the request do not match
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InventoryUnavailable:
+      description: Inventory is unavailable for one or more requested nights
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ValidationError:
+      description: The request contains invalid data
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorResponse'
+    RateLimited:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    Identifier:
+      type: integer
+      format: int64
+      minimum: 1
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [name, email, password, password_confirmation]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          minLength: 8
+          format: password
+        password_confirmation:
+          type: string
+          minLength: 8
+          format: password
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    CreateBookingRequest:
+      type: object
+      additionalProperties: false
+      required: [property_id, room_type_id, check_in, check_out, guests]
+      properties:
+        property_id:
+          $ref: '#/components/schemas/Identifier'
+        room_type_id:
+          $ref: '#/components/schemas/Identifier'
+        check_in:
+          type: string
+          format: date
+        check_out:
+          type: string
+          format: date
+        guests:
+          type: integer
+          minimum: 1
+        notes:
+          type:
+            - string
+            - 'null'
+    UpdateBookingRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        check_in:
+          type: string
+          format: date
+        check_out:
+          type: string
+          format: date
+        guests:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/EditableBookingStatus'
+        notes:
+          type:
+            - string
+            - 'null'
+    CheckInRequest:
+      type: object
+      additionalProperties: false
+      required: [room_id]
+      properties:
+        room_id:
+          $ref: '#/components/schemas/Identifier'
+    User:
+      type: object
+      required: [id, name, email, created_at, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Identifier'
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        email_verified_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Room:
+      type: object
+      required: [id, property_id, room_type_id, number, status]
+      properties:
+        id:
+          $ref: '#/components/schemas/Identifier'
+        property_id:
+          $ref: '#/components/schemas/Identifier'
+        room_type_id:
+          $ref: '#/components/schemas/Identifier'
+        number:
+          type: string
+        floor:
+          type:
+            - string
+            - 'null'
+        status:
+          type: string
+          enum: [clean, dirty, occupied, out_of_service]
+    BookingStatus:
+      type: string
+      enum: [pending, confirmed, checked_in, cancelled, completed]
+    EditableBookingStatus:
+      type: string
+      enum: [pending, confirmed, cancelled, completed]
+    Booking:
+      type: object
+      required:
+        - id
+        - user_id
+        - property_id
+        - room_type_id
+        - check_in
+        - check_out
+        - guests
+        - status
+      properties:
+        id:
+          $ref: '#/components/schemas/Identifier'
+        user_id:
+          $ref: '#/components/schemas/Identifier'
+        property_id:
+          $ref: '#/components/schemas/Identifier'
+        room_type_id:
+          $ref: '#/components/schemas/Identifier'
+        room_id:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        check_in:
+          type: string
+          format: date-time
+        check_out:
+          type: string
+          format: date-time
+        guests:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/BookingStatus'
+        checked_in_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        checked_in_by:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        notes:
+          type:
+            - string
+            - 'null'
+        room:
+          oneOf:
+            - $ref: '#/components/schemas/Room'
+            - type: 'null'
+        checked_in_by_user:
+          oneOf:
+            - $ref: '#/components/schemas/User'
+            - type: 'null'
+    AvailabilityResult:
+      type: object
+      required:
+        - room_type_id
+        - property_id
+        - name
+        - code
+        - max_occupancy
+        - base_rate
+        - total_inventory
+        - blocked_inventory
+        - reserved_inventory
+        - available_inventory
+      properties:
+        room_type_id:
+          $ref: '#/components/schemas/Identifier'
+        property_id:
+          $ref: '#/components/schemas/Identifier'
+        name:
+          type: string
+        code:
+          type: string
+        description:
+          type:
+            - string
+            - 'null'
+        max_occupancy:
+          type: integer
+        base_rate:
+          type: string
+          pattern: '^\\d+\\.\\d{2}$'
+        total_inventory:
+          type: integer
+          minimum: 0
+        blocked_inventory:
+          type: integer
+          minimum: 0
+        reserved_inventory:
+          type: integer
+          minimum: 0
+        available_inventory:
+          type: integer
+          minimum: 1
+    Pagination:
+      type: object
+      required: [current_page, per_page, total, last_page]
+      properties:
+        current_page:
+          type: integer
+          minimum: 1
+        per_page:
+          type: integer
+          minimum: 1
+        total:
+          type: integer
+          minimum: 0
+        last_page:
+          type: integer
+          minimum: 1
+    AuthData:
+      type: object
+      required: [user, token]
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+    AuthResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/AuthData'
+    UserResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/User'
+    MessageResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [message]
+          properties:
+            message:
+              type: string
+    BookingResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/Booking'
+    BookingCollectionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Booking'
+        meta:
+          type: object
+          required: [pagination]
+          properties:
+            pagination:
+              $ref: '#/components/schemas/Pagination'
+    AvailabilityResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityResult'
+        meta:
+          type: object
+          required: [search, performance]
+          properties:
+            search:
+              type: object
+              required: [property_id, check_in, check_out, occupancy]
+              properties:
+                property_id:
+                  $ref: '#/components/schemas/Identifier'
+                check_in:
+                  type: string
+                  format: date
+                check_out:
+                  type: string
+                  format: date
+                occupancy:
+                  type: integer
+            performance:
+              type: object
+              required: [target_ms, duration_ms, meets_target]
+              properties:
+                target_ms:
+                  type: integer
+                  minimum: 1
+                duration_ms:
+                  type: number
+                  minimum: 0
+                meets_target:
+                  type: boolean
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          examples: [VALIDATION_FAILED]
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: '#/components/schemas/Error'
+    ValidationErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, details]
+          properties:
+            code:
+              type: string
+              const: VALIDATION_FAILED
+            message:
+              type: string
+            details:
+              type: object
+              required: [fields]
+              properties:
+                fields:
+                  type: object
+                  additionalProperties:
+                    type: array
+                    items:
+                      type: string
