@@ -88,4 +88,6 @@ Property charge types, automatic tax, and authorized adjustment/void entries are
 
 Payment intent, capture, refund, void, split-settlement, and webhook reconciliation behavior is documented in [`docs/payment-gateway.md`](payment-gateway.md).
 
+Arrivals, departures, in-house, occupancy, and CSV export behavior is documented in [`docs/operational-reports.md`](operational-reports.md).
+
 Cancellation windows, penalties, and non-refundable behavior are documented in [`docs/cancellations.md`](cancellations.md).
