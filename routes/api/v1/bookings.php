@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Booking\Http\Controllers\BookingController;
 use Modules\Booking\Http\Controllers\CheckInController;
+use Modules\Booking\Http\Controllers\InStayModificationController;
 use Modules\Booking\Http\Controllers\ReservationCancellationController;
 
 /*
@@ -27,6 +28,14 @@ Route::middleware(['auth:sanctum', 'active', 'property.context'])->prefix('booki
     Route::post('/{id}/cancel', [ReservationCancellationController::class, 'store'])
         ->middleware('permission:reservations.write')
         ->name('cancel.store');
+
+    Route::post('/{id}/room-move', [InStayModificationController::class, 'moveRoom'])
+        ->middleware('permission:reservations.write')
+        ->name('room-move.store');
+
+    Route::post('/{id}/departure-adjustment', [InStayModificationController::class, 'adjustDeparture'])
+        ->middleware('permission:reservations.write')
+        ->name('departure-adjustment.store');
 
     Route::get('/{id}', [BookingController::class, 'show'])
         ->middleware('permission:reservations.read')

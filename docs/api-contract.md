@@ -80,4 +80,6 @@ Filters are query parameters named after the resource field (for example, `statu
 
 Reservation modification semantics and folio adjustments are documented in [`docs/reservation-modifications.md`](reservation-modifications.md).
 
+Checked-in room moves, extensions, and early departures are documented in [`docs/in-stay-modifications.md`](in-stay-modifications.md).
+
 Cancellation windows, penalties, and non-refundable behavior are documented in [`docs/cancellations.md`](cancellations.md).
