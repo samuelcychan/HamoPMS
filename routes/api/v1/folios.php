@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Folio\Http\Controllers\AncillaryChargeController;
 use Modules\Folio\Http\Controllers\FolioController;
 use Modules\Folio\Http\Controllers\FolioLineItemController;
 
@@ -18,4 +19,12 @@ Route::middleware(['auth:sanctum', 'active', 'property.context'])->prefix('booki
     Route::post('/line-items', [FolioLineItemController::class, 'store'])
         ->middleware('permission:folios.write')
         ->name('line-items.store');
+
+    Route::post('/ancillary-charges', [AncillaryChargeController::class, 'store'])
+        ->middleware('permission:folios.write')
+        ->name('ancillary-charges.store');
+
+    Route::post('/ancillary-charges/{lineItemId}/adjustments', [AncillaryChargeController::class, 'adjust'])
+        ->middleware('permission:folios.adjust')
+        ->name('ancillary-charges.adjust');
 });

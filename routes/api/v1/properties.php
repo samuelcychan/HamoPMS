@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Folio\Http\Controllers\AncillaryChargeTypeController;
 use Modules\Property\Http\Controllers\PropertyController;
 use Modules\Property\Http\Controllers\RoomController;
 use Modules\Property\Http\Controllers\RoomTypeController;
@@ -21,6 +22,16 @@ Route::middleware(['auth:sanctum', 'active'])->prefix('properties')->name('prope
         ->name('store');
 
     Route::middleware('property.context')->prefix('/{propertyId}')->group(function () {
+        Route::get('/ancillary-charge-types', [AncillaryChargeTypeController::class, 'index'])
+            ->middleware('permission:folios.read')
+            ->name('ancillary-charge-types.index');
+        Route::post('/ancillary-charge-types', [AncillaryChargeTypeController::class, 'store'])
+            ->middleware('permission:properties.write')
+            ->name('ancillary-charge-types.store');
+        Route::put('/ancillary-charge-types/{chargeTypeId}', [AncillaryChargeTypeController::class, 'update'])
+            ->middleware('permission:properties.write')
+            ->name('ancillary-charge-types.update');
+
         Route::get('/room-types', [RoomTypeController::class, 'index'])
             ->middleware('permission:rooms.read')
             ->name('room-types.index');

@@ -84,4 +84,6 @@ Checked-in room moves, extensions, and early departures are documented in [`docs
 
 Check-out balance validation, late fees, folio closure, and room release are documented in [`docs/check-out.md`](check-out.md).
 
+Property charge types, automatic tax, and authorized adjustment/void entries are documented in [`docs/ancillary-charges.md`](ancillary-charges.md).
+
 Cancellation windows, penalties, and non-refundable behavior are documented in [`docs/cancellations.md`](cancellations.md).

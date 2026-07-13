@@ -7,12 +7,12 @@ Roles are assigned globally or within one property. A global assignment applies 
 | Role | Permissions |
 | --- | --- |
 | Admin | All seeded permissions, including role management |
-| Manager | Property, room, reservation, and folio read/write; payment read |
+| Manager | Property, room, reservation, and folio read/write; folio adjustment; payment read |
 | Receptionist | Property read; room, reservation, folio, and payment read/write |
 | Housekeeping | Property read; room read/write |
-| Accountant | Property and reservation read; folio and payment read/write |
+| Accountant | Property and reservation read; folio and payment read/write; folio adjustment |
 
-The canonical permission slugs are `properties.read`, `properties.write`, `rooms.read`, `rooms.write`, `reservations.read`, `reservations.write`, `folios.read`, `folios.write`, `payments.read`, `payments.write`, and `users.manage_roles`.
+The canonical permission slugs are `properties.read`, `properties.write`, `rooms.read`, `rooms.write`, `reservations.read`, `reservations.write`, `folios.read`, `folios.write`, `folios.adjust`, `payments.read`, `payments.write`, and `users.manage_roles`.
 
 Run `php artisan db:seed --class=RolePermissionSeeder` to update the matrix idempotently. The default `DatabaseSeeder` also runs this seeder.
 

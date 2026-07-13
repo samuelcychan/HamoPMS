@@ -13,7 +13,7 @@ class RolePermissionSeeder extends Seeder
             'properties.read', 'properties.write',
             'rooms.read', 'rooms.write',
             'reservations.read', 'reservations.write',
-            'folios.read', 'folios.write',
+            'folios.read', 'folios.write', 'folios.adjust',
             'payments.read', 'payments.write',
             'users.manage_roles',
         ],
@@ -21,7 +21,7 @@ class RolePermissionSeeder extends Seeder
             'properties.read', 'properties.write',
             'rooms.read', 'rooms.write',
             'reservations.read', 'reservations.write',
-            'folios.read', 'folios.write',
+            'folios.read', 'folios.write', 'folios.adjust',
             'payments.read',
         ],
         'receptionist' => [
@@ -38,7 +38,7 @@ class RolePermissionSeeder extends Seeder
         'accountant' => [
             'properties.read',
             'reservations.read',
-            'folios.read', 'folios.write',
+            'folios.read', 'folios.write', 'folios.adjust',
             'payments.read', 'payments.write',
         ],
     ];
