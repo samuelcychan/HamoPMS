@@ -147,6 +147,43 @@ class HousekeepingWorkflowTest extends TestCase
         $this->assertSame(Room::STATUS_OCCUPIED, $this->room->fresh()->status);
     }
 
+    public function test_shift_report_tracks_sla_and_completion_performance(): void
+    {
+        $taskId = $this->checkOut()->json('meta.checkout.housekeeping_task_id');
+
+        $this->actingAs($this->housekeeper, 'sanctum')
+            ->getJson($this->tasksUrl().'/shift-report?date=2026-07-13')
+            ->assertOk()
+            ->assertJsonPath('data.total_tasks', 1)
+            ->assertJsonPath('data.status.pending', 1)
+            ->assertJsonPath('data.priority.low', 0)
+            ->assertJsonPath('data.priority.normal', 1)
+            ->assertJsonPath('data.overdue_tasks', 0);
+
+        $this->actingAs($this->receptionist, 'sanctum')
+            ->patchJson("{$this->tasksUrl()}/{$taskId}/assignment", [
+                'assigned_to' => $this->housekeeper->id,
+            ])->assertOk();
+        $this->actingAs($this->housekeeper, 'sanctum')
+            ->postJson("{$this->tasksUrl()}/{$taskId}/start")
+            ->assertOk();
+        Carbon::setTestNow('2026-07-13 12:00:00');
+        CarbonImmutable::setTestNow('2026-07-13 12:00:00');
+        $this->actingAs($this->housekeeper, 'sanctum')
+            ->postJson("{$this->tasksUrl()}/{$taskId}/complete")
+            ->assertOk();
+
+        $this->actingAs($this->housekeeper, 'sanctum')
+            ->getJson($this->tasksUrl().'/shift-report?date=2026-07-13')
+            ->assertOk()
+            ->assertJsonPath('data.status.completed', 1)
+            ->assertJsonPath('data.overdue_tasks', 1)
+            ->assertJsonPath('data.completed_tasks', 1)
+            ->assertJsonPath('data.completed_on_time', 0)
+            ->assertJsonPath('data.completed_late', 1)
+            ->assertJsonPath('data.average_turnaround_minutes', 120);
+    }
+
     public function test_assigned_housekeeper_cleans_room_and_makes_it_check_in_ready(): void
     {
         $taskId = $this->checkOut()->json('meta.checkout.housekeeping_task_id');

@@ -4,6 +4,7 @@ namespace Modules\Property\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -49,6 +50,41 @@ class HousekeepingTaskController extends Controller
             'assignedByUser:id,name,email',
             'completedByUser:id,name,email',
         ]));
+    }
+
+    public function shiftReport(Request $request, string $propertyId): JsonResponse
+    {
+        $validated = $request->validate(['date' => ['sometimes', 'date_format:Y-m-d']]);
+        $date = isset($validated['date'])
+            ? CarbonImmutable::createFromFormat('Y-m-d', $validated['date'])->startOfDay()
+            : CarbonImmutable::today();
+        $tasks = HousekeepingTask::query()
+            ->where('property_id', $propertyId)
+            ->where('created_at', '>=', $date)
+            ->where('created_at', '<', $date->addDay())
+            ->get();
+        $completed = $tasks->where('status', HousekeepingTask::STATUS_COMPLETED);
+        $completedLate = $completed->filter(fn (HousekeepingTask $task): bool => $task->completed_at->greaterThan($task->due_at));
+        $overdue = $tasks->filter(fn (HousekeepingTask $task): bool => $task->due_at->lessThan(
+            $task->completed_at ?? CarbonImmutable::now(),
+        ));
+        $averageTurnaround = $completed->isEmpty()
+            ? null
+            : round($completed->average(fn (HousekeepingTask $task): float => $task->created_at->diffInMinutes($task->completed_at)), 2);
+
+        return ApiResponse::success([
+            'date' => $date->toDateString(),
+            'total_tasks' => $tasks->count(),
+            'status' => collect(HousekeepingTask::STATUSES)
+                ->mapWithKeys(fn (string $status): array => [$status => $tasks->where('status', $status)->count()]),
+            'priority' => collect(['low', 'normal', 'high', 'urgent'])
+                ->mapWithKeys(fn (string $priority): array => [$priority => $tasks->where('priority', $priority)->count()]),
+            'overdue_tasks' => $overdue->count(),
+            'completed_tasks' => $completed->count(),
+            'completed_on_time' => $completed->count() - $completedLate->count(),
+            'completed_late' => $completedLate->count(),
+            'average_turnaround_minutes' => $averageTurnaround,
+        ]);
     }
 
     public function assign(Request $request, string $propertyId, string $taskId): JsonResponse
