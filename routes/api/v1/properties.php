@@ -11,7 +11,7 @@ use Modules\Property\Http\Controllers\RoomTypeController;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth:sanctum')->prefix('properties')->name('properties.')->group(function () {
+Route::middleware(['auth:sanctum', 'active'])->prefix('properties')->name('properties.')->group(function () {
     Route::get('/', [PropertyController::class, 'index'])
         ->middleware('permission:properties.read')
         ->name('index');

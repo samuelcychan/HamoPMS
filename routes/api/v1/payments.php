@@ -9,7 +9,7 @@ use Modules\Payment\Http\Controllers\PaymentController;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth:sanctum', 'property.context'])->prefix('payments')->name('payments.')->group(function () {
+Route::middleware(['auth:sanctum', 'active', 'property.context'])->prefix('payments')->name('payments.')->group(function () {
     Route::get('/', [PaymentController::class, 'index'])
         ->middleware('permission:payments.read')
         ->name('index');

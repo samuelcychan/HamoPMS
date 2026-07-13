@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -11,6 +12,10 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
+
+    protected $attributes = [
+        'is_active' => true,
+    ];
 
     /**
      * The attributes that are mass assignable.
@@ -41,6 +46,8 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'is_active' => 'boolean',
+            'deactivated_at' => 'datetime',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
@@ -49,6 +56,11 @@ class User extends Authenticatable
     public function roleAssignments(): HasMany
     {
         return $this->hasMany(RoleAssignment::class);
+    }
+
+    public function deactivatedBy(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'deactivated_by');
     }
 
     public function hasPermission(string $permission, ?int $propertyId = null): bool

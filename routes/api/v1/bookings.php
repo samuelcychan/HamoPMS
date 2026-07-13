@@ -10,7 +10,7 @@ use Modules\Booking\Http\Controllers\CheckInController;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth:sanctum', 'property.context'])->prefix('bookings')->name('bookings.')->group(function () {
+Route::middleware(['auth:sanctum', 'active', 'property.context'])->prefix('bookings')->name('bookings.')->group(function () {
     Route::get('/', [BookingController::class, 'index'])
         ->middleware('permission:reservations.read')
         ->name('index');
