@@ -31,6 +31,8 @@ tags:
     description: Idempotent intent, capture, refund, void, and split settlement.
   - name: Payment webhooks
     description: Signed gateway settlement reconciliation.
+  - name: Integrations
+    description: Signed, idempotent external channel events and delivery observability.
   - name: Reports
     description: Property-scoped operational and occupancy reports with JSON or CSV output.
   - name: Housekeeping
@@ -1363,6 +1365,128 @@ paths:
                 $ref: '#/components/schemas/WebhookAcknowledgementResponse'
         '400':
           $ref: '#/components/responses/InvalidWebhook'
+  /integrations/{provider}/events:
+    post:
+      tags: [Integrations]
+      operationId: receiveIntegrationEvent
+      summary: Accept a signed canonical event from an external adapter
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 60
+        - name: X-Integration-Event-ID
+          in: header
+          required: true
+          schema:
+            type: string
+            maxLength: 255
+        - name: X-Integration-Signature
+          in: header
+          required: true
+          description: Lowercase hexadecimal HMAC-SHA256 of the raw request body.
+          schema:
+            type: string
+            pattern: '^[a-f0-9]{64}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InboundIntegrationEventRequest'
+      responses:
+        '200':
+          description: Idempotent replay of the existing event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationEventResponse'
+        '202':
+          description: Event persisted and queued for adapter processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationEventResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /integration-events:
+    get:
+      tags: [Integrations]
+      operationId: listIntegrationEvents
+      summary: List property-scoped integration processing state
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportPropertyId'
+        - $ref: '#/components/parameters/PropertyHeader'
+        - name: provider
+          in: query
+          schema:
+            type: string
+            maxLength: 60
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed, dead_lettered]
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Paginated integration events without inbound payload bodies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationEventCollectionResponse'
+        '400':
+          $ref: '#/components/responses/PropertyContextRequired'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /integration-events/{eventId}/retry:
+    post:
+      tags: [Integrations]
+      operationId: retryIntegrationEvent
+      summary: Requeue a failed or dead-lettered event
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Identifier'
+        - $ref: '#/components/parameters/ReportPropertyId'
+        - $ref: '#/components/parameters/PropertyHeader'
+      responses:
+        '202':
+          description: Event reset to pending and queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationEventResponse'
+        '400':
+          $ref: '#/components/responses/PropertyContextRequired'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /reports/arrivals:
     get:
       tags: [Reports]
@@ -1820,6 +1944,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: The request conflicts with an existing resource or state
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
     InventoryUnavailable:
       description: Inventory is unavailable for one or more requested nights
       content:
@@ -1971,6 +2101,70 @@ components:
           type: string
           minLength: 12
           format: password
+    InboundIntegrationEventRequest:
+      type: object
+      additionalProperties: false
+      required: [property_id, type, occurred_at, data]
+      properties:
+        property_id:
+          $ref: '#/components/schemas/Identifier'
+        type:
+          type: string
+          maxLength: 100
+          examples: [reservation.created, reservation.cancelled, availability.changed]
+        occurred_at:
+          type: string
+          format: date-time
+        data:
+          type: object
+          additionalProperties: true
+    IntegrationEvent:
+      type: object
+      required:
+        - id
+        - property_id
+        - provider
+        - external_event_id
+        - type
+        - occurred_at
+        - status
+        - attempts
+        - created_at
+        - updated_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Identifier'
+        property_id:
+          $ref: '#/components/schemas/Identifier'
+        provider:
+          type: string
+        external_event_id:
+          type: string
+        type:
+          type: string
+        occurred_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [pending, processing, completed, failed, dead_lettered]
+        attempts:
+          type: integer
+          minimum: 0
+        last_error:
+          type: [string, 'null']
+        processed_at:
+          type: [string, 'null']
+          format: date-time
+        failed_at:
+          type: [string, 'null']
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     CreateBookingRequest:
       type: object
       additionalProperties: false
@@ -3211,6 +3405,31 @@ components:
           properties:
             message:
               type: string
+    IntegrationEventResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/IntegrationEvent'
+        meta:
+          type: object
+          properties:
+            idempotent_replay:
+              type: boolean
+    IntegrationEventCollectionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntegrationEvent'
+        meta:
+          type: object
+          required: [pagination]
+          properties:
+            pagination:
+              $ref: '#/components/schemas/Pagination'
     BookingResponse:
       type: object
       required: [data]
