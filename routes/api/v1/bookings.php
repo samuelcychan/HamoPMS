@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Booking\Http\Controllers\BookingController;
+use Modules\Booking\Http\Controllers\CheckInController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,6 +18,10 @@ Route::middleware('auth:sanctum')->prefix('bookings')->name('bookings.')->group(
     Route::post('/', [BookingController::class, 'store'])
         ->middleware('permission:reservations.write')
         ->name('store');
+
+    Route::post('/{id}/check-in', [CheckInController::class, 'store'])
+        ->middleware('permission:reservations.write')
+        ->name('check-in.store');
 
     Route::get('/{id}', [BookingController::class, 'show'])
         ->middleware('permission:reservations.read')
