@@ -66,10 +66,17 @@ class CheckOutService
             $paymentCents = Payment::query()
                 ->where('booking_id', $booking->id)
                 ->where('currency', $folio->currency)
-                ->where('status', Payment::STATUS_COMPLETED)
+                ->whereIn('status', Payment::SETTLED_STATUSES)
                 ->lockForUpdate()
-                ->get(['amount'])
-                ->sum(fn (Payment $payment): int => $this->rates->amountCents($payment->amount));
+                ->get(['amount', 'captured_amount', 'refunded_amount'])
+                ->sum(function (Payment $payment): int {
+                    $captured = $this->rates->amountCents($payment->captured_amount);
+                    $legacyCaptured = $captured === 0
+                        ? $this->rates->amountCents($payment->amount)
+                        : $captured;
+
+                    return $legacyCaptured - $this->rates->amountCents($payment->refunded_amount);
+                });
             $outstandingCents = $chargeCents - $paymentCents;
             $lateFeeAmount = $folio->lineItems()
                 ->where('type', FolioLineItem::TYPE_LATE_CHECKOUT_FEE)

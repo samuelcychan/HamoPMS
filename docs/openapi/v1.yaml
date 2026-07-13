@@ -25,6 +25,10 @@ tags:
     description: Checked-in room moves, extensions, and early departures.
   - name: Ancillary charges
     description: Property charge types and immutable add-on folio postings.
+  - name: Payments
+    description: Idempotent intent, capture, refund, void, and split settlement.
+  - name: Payment webhooks
+    description: Signed gateway settlement reconciliation.
 paths:
   /auth/register:
     post:
@@ -576,6 +580,157 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /payments:
+    post:
+      tags: [Payments]
+      operationId: createPayment
+      summary: Create a payment tender or manual-capture card intent
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCreateRequest'
+      responses:
+        '200':
+          description: Idempotent replay of an existing payment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '201':
+          description: Payment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          $ref: '#/components/responses/GatewayUnavailable'
+  /payments/{paymentId}/capture:
+    parameters:
+      - $ref: '#/components/parameters/PaymentId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      tags: [Payments]
+      operationId: capturePayment
+      summary: Capture the full card tender
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Capture result or idempotent replay
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOperationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          $ref: '#/components/responses/GatewayUnavailable'
+  /payments/{paymentId}/refund:
+    parameters:
+      - $ref: '#/components/parameters/PaymentId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      tags: [Payments]
+      operationId: refundPayment
+      summary: Refund part or all of a captured payment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentAmountRequest'
+      responses:
+        '200':
+          description: Refund result or idempotent replay
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOperationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          $ref: '#/components/responses/GatewayUnavailable'
+  /payments/{paymentId}/void:
+    parameters:
+      - $ref: '#/components/parameters/PaymentId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+    post:
+      tags: [Payments]
+      operationId: voidPayment
+      summary: Void an uncaptured payment intent
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Void result or idempotent replay
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentOperationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          $ref: '#/components/responses/GatewayUnavailable'
+  /webhooks/stripe:
+    post:
+      tags: [Payment webhooks]
+      operationId: receiveStripeWebhook
+      summary: Verify and reconcile a Stripe event
+      security: []
+      parameters:
+        - name: Stripe-Signature
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Event accepted or replay acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookAcknowledgementResponse'
+        '400':
+          $ref: '#/components/responses/InvalidWebhook'
 components:
   securitySchemes:
     bearerAuth:
@@ -607,6 +762,20 @@ components:
       required: true
       schema:
         $ref: '#/components/schemas/Identifier'
+    PaymentId:
+      name: paymentId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Identifier'
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 255
     PropertyHeader:
       name: X-Property-ID
       in: header
@@ -677,6 +846,18 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
     FolioBalanceOutstanding:
       description: The folio has a non-zero balance after completed payments
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    GatewayUnavailable:
+      description: The configured payment gateway is temporarily unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InvalidWebhook:
+      description: The webhook signature or timestamp is invalid
       content:
         application/json:
           schema:
@@ -858,6 +1039,33 @@ components:
         reason:
           type: string
           maxLength: 255
+    PaymentCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [booking_id, amount, currency, method]
+      properties:
+        booking_id:
+          $ref: '#/components/schemas/Identifier'
+        amount:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 9999999999.99
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: '^[A-Za-z]{3}$'
+        method:
+          type: string
+          enum: [card, bank_transfer, cash]
+    PaymentAmountRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        amount:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 9999999999.99
     RoomMoveRequest:
       type: object
       additionalProperties: false
@@ -969,6 +1177,73 @@ components:
         posted_at:
           type: string
           format: date-time
+    Payment:
+      type: object
+      required: [id, user_id, booking_id, amount, captured_amount, refunded_amount, currency, method, status, settlement_status]
+      properties:
+        id:
+          $ref: '#/components/schemas/Identifier'
+        user_id:
+          $ref: '#/components/schemas/Identifier'
+        booking_id:
+          $ref: '#/components/schemas/Identifier'
+        amount:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+        captured_amount:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+        refunded_amount:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+        currency:
+          type: string
+        method:
+          type: string
+        gateway:
+          type:
+            - string
+            - 'null'
+        gateway_payment_id:
+          type:
+            - string
+            - 'null'
+        idempotency_key:
+          type:
+            - string
+            - 'null'
+        status:
+          type: string
+        settlement_status:
+          type: string
+    PaymentOperation:
+      type: object
+      required: [id, payment_id, type, idempotency_key, status]
+      properties:
+        id:
+          $ref: '#/components/schemas/Identifier'
+        payment_id:
+          $ref: '#/components/schemas/Identifier'
+        performed_by:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        type:
+          type: string
+          enum: [capture, refund, void]
+        amount:
+          type:
+            - string
+            - 'null'
+          pattern: '^\d+\.\d{2}$'
+        idempotency_key:
+          type: string
+        gateway_transaction_id:
+          type:
+            - string
+            - 'null'
+        status:
+          type: string
     Booking:
       type: object
       required:
@@ -1271,6 +1546,44 @@ components:
             balance:
               type: string
               pattern: '^-?\d+\.\d{2}$'
+    PaymentResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/Payment'
+        meta:
+          type: object
+          required: [idempotent_replay]
+          properties:
+            idempotent_replay:
+              type: boolean
+    PaymentOperationResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/Payment'
+        meta:
+          type: object
+          required: [operation, idempotent_replay]
+          properties:
+            operation:
+              $ref: '#/components/schemas/PaymentOperation'
+            idempotent_replay:
+              type: boolean
+    WebhookAcknowledgementResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [received, event_id]
+          properties:
+            received:
+              type: boolean
+            event_id:
+              type: string
     BookingCollectionResponse:
       type: object
       required: [data, meta]

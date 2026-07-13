@@ -6,6 +6,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Modules\Payment\Contracts\PaymentGateway;
 use Modules\Payment\Data\PaymentIntentRequest;
+use Modules\Payment\Data\PaymentOperationRequest;
 use Modules\Payment\Enums\GatewayErrorCode;
 use Modules\Payment\Exceptions\GatewayException;
 use Modules\Payment\Gateways\StripeGateway;
@@ -90,6 +91,42 @@ class StripeGatewayTest extends TestCase
             $this->assertSame('rate_limit', $exception->details['provider_code']);
             $this->assertSame('GATEWAY_RATE_LIMITED', $exception->toArray()['code']);
         }
+    }
+
+    public function test_capture_refund_and_void_use_stripe_mutation_endpoints_with_idempotency(): void
+    {
+        Http::fake([
+            'api.stripe.test/v1/payment_intents/pi_123/capture' => Http::response([
+                'id' => 'pi_123',
+                'status' => 'succeeded',
+            ]),
+            'api.stripe.test/v1/refunds' => Http::response([
+                'id' => 're_123',
+                'status' => 'succeeded',
+            ]),
+            'api.stripe.test/v1/payment_intents/pi_456/cancel' => Http::response([
+                'id' => 'pi_456',
+                'status' => 'canceled',
+            ]),
+        ]);
+        $gateway = $this->app->make(PaymentGateway::class);
+
+        $capture = $gateway->capture(new PaymentOperationRequest('pi_123', 'capture-key', 7500));
+        $refund = $gateway->refund(new PaymentOperationRequest('pi_123', 'refund-key', 2500));
+        $void = $gateway->void(new PaymentOperationRequest('pi_456', 'void-key'));
+
+        $this->assertSame('succeeded', $capture->status);
+        $this->assertSame('re_123', $refund->transactionId);
+        $this->assertSame('canceled', $void->status);
+        Http::assertSent(fn (Request $request): bool => $request->url() === 'https://api.stripe.test/v1/payment_intents/pi_123/capture'
+            && $request->hasHeader('Idempotency-Key', 'capture-key')
+            && $request['amount_to_capture'] === 7500);
+        Http::assertSent(fn (Request $request): bool => $request->url() === 'https://api.stripe.test/v1/refunds'
+            && $request->hasHeader('Idempotency-Key', 'refund-key')
+            && $request['payment_intent'] === 'pi_123'
+            && $request['amount'] === 2500);
+        Http::assertSent(fn (Request $request): bool => $request->url() === 'https://api.stripe.test/v1/payment_intents/pi_456/cancel'
+            && $request->hasHeader('Idempotency-Key', 'void-key'));
     }
 
     public function test_missing_gateway_credentials_fail_before_an_http_request(): void

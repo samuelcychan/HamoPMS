@@ -11,6 +11,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Modules\Payment\Exceptions\GatewayException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -54,6 +55,23 @@ return Application::configure(basePath: dirname(__DIR__))
             return $request->is('api/*')
                 ? ApiResponse::error('RESOURCE_NOT_FOUND', 'The requested resource was not found.', 404)
                 : null;
+        });
+
+        $exceptions->render(function (GatewayException $exception, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return ApiResponse::error(
+                $exception->errorCode->value,
+                $exception->getMessage(),
+                $exception->retryable ? 503 : 422,
+                [
+                    'gateway' => $exception->gateway,
+                    'retryable' => $exception->retryable,
+                    'provider' => $exception->details,
+                ],
+            );
         });
 
         $exceptions->render(function (Throwable $exception, Request $request) {
