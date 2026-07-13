@@ -45,7 +45,7 @@ class PaymentController extends Controller
         ]);
 
         $validated['user_id'] = $request->user()->id;
-        $validated['status'] = 'pending';
+        $validated['status'] = Payment::STATUS_PENDING;
         $payment = Payment::create($validated);
 
         return ApiResponse::success($payment, 201);

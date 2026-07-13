@@ -213,4 +213,24 @@ class FolioTest extends TestCase
         $this->expectException(\LogicException::class);
         $lineItem->update(['amount' => '200.00']);
     }
+
+    public function test_closed_folio_cannot_receive_new_line_items(): void
+    {
+        Folio::create([
+            'booking_id' => $this->booking->id,
+            'status' => Folio::STATUS_CLOSED,
+            'currency' => 'USD',
+        ]);
+
+        $this->actingAsUser()
+            ->postJson("/api/v1/bookings/{$this->booking->id}/folio/line-items", [
+                'type' => 'room_charge',
+                'description' => 'Post-close charge',
+                'amount' => '10.00',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonStructure(['error' => ['details' => ['fields' => ['folio']]]]);
+
+        $this->assertDatabaseCount('folio_line_items', 0);
+    }
 }

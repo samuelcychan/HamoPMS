@@ -46,6 +46,8 @@ class Booking extends Model
         'status',
         'checked_in_at',
         'checked_in_by',
+        'checked_out_at',
+        'checked_out_by',
         'notes',
         'special_requests',
         'nightly_rate',
@@ -63,6 +65,7 @@ class Booking extends Model
             'check_out' => 'date',
             'guests' => 'integer',
             'checked_in_at' => 'datetime',
+            'checked_out_at' => 'datetime',
             'special_requests' => 'array',
             'nightly_rate' => 'decimal:2',
             'cancellation_policy_snapshot' => 'array',
@@ -84,6 +87,11 @@ class Booking extends Model
     public function checkedInByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'checked_in_by');
+    }
+
+    public function checkedOutByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'checked_out_by');
     }
 
     public function modifications(): HasMany

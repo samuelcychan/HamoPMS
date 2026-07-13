@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Folio extends Model
 {
+    public const STATUS_OPEN = 'open';
+
+    public const STATUS_CLOSED = 'closed';
+
     protected $fillable = [
         'booking_id',
         'status',

@@ -82,4 +82,6 @@ Reservation modification semantics and folio adjustments are documented in [`doc
 
 Checked-in room moves, extensions, and early departures are documented in [`docs/in-stay-modifications.md`](in-stay-modifications.md).
 
+Check-out balance validation, late fees, folio closure, and room release are documented in [`docs/check-out.md`](check-out.md).
+
 Cancellation windows, penalties, and non-refundable behavior are documented in [`docs/cancellations.md`](cancellations.md).

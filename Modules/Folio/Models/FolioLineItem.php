@@ -17,6 +17,8 @@ class FolioLineItem extends Model
 
     public const TYPE_CANCELLATION_PENALTY = 'cancellation_penalty';
 
+    public const TYPE_LATE_CHECKOUT_FEE = 'late_checkout_fee';
+
     public const CREATED_AT = 'posted_at';
 
     public const UPDATED_AT = null;
