@@ -5,6 +5,7 @@ namespace Modules\Booking\Services;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Modules\Booking\Events\ReservationConfirmed;
 use Modules\Booking\Models\Booking;
 use Modules\Property\Models\Room;
 use Modules\Property\Models\RoomType;
@@ -25,7 +26,7 @@ class ReservationService
      */
     public function createConfirmed(int $userId, array $attributes): ?Booking
     {
-        return DB::transaction(function () use ($userId, $attributes): ?Booking {
+        $booking = DB::transaction(function () use ($userId, $attributes): ?Booking {
             $checkIn = CarbonImmutable::parse($attributes['check_in'])->startOfDay();
             $checkOut = CarbonImmutable::parse($attributes['check_out'])->startOfDay();
 
@@ -73,5 +74,11 @@ class ReservationService
 
             return $booking;
         });
+
+        if ($booking !== null) {
+            ReservationConfirmed::dispatch($booking);
+        }
+
+        return $booking;
     }
 }

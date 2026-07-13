@@ -9,6 +9,7 @@ use Modules\Booking\Services\ReservationRateCalculator;
 use Modules\Payment\Contracts\PaymentGateway;
 use Modules\Payment\Data\PaymentIntentRequest;
 use Modules\Payment\Data\PaymentOperationRequest;
+use Modules\Payment\Events\PaymentReceiptIssued;
 use Modules\Payment\Models\Payment;
 use Modules\Payment\Models\PaymentOperation;
 
@@ -81,7 +82,13 @@ class PaymentSettlementService
 
     public function capture(int $paymentId, ?string $amount, string $idempotencyKey, int $actorId): array
     {
-        return $this->operate($paymentId, 'capture', $amount, $idempotencyKey, $actorId);
+        $result = $this->operate($paymentId, 'capture', $amount, $idempotencyKey, $actorId);
+
+        if (! $result['replayed'] && $result['payment']->status === Payment::STATUS_COMPLETED) {
+            PaymentReceiptIssued::dispatch($result['payment']);
+        }
+
+        return $result;
     }
 
     public function refund(int $paymentId, ?string $amount, string $idempotencyKey, int $actorId): array

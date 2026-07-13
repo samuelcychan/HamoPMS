@@ -6,6 +6,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Modules\Booking\Events\ReservationModified;
 use Modules\Booking\Models\Booking;
 use Modules\Property\Models\Room;
 use Modules\Property\Models\RoomType;
@@ -26,7 +27,7 @@ class ReservationModificationService
 
     public function modify(int $bookingId, int $actorId, array $attributes): ?array
     {
-        return DB::transaction(function () use ($bookingId, $actorId, $attributes): ?array {
+        $result = DB::transaction(function () use ($bookingId, $actorId, $attributes): ?array {
             $booking = Booking::query()->lockForUpdate()->findOrFail($bookingId);
 
             if (! in_array($booking->status, self::MODIFIABLE_STATUSES, true)) {
@@ -146,5 +147,11 @@ class ReservationModificationService
                 'rate_difference' => $this->rates->formatCents($differenceCents),
             ];
         });
+
+        if ($result !== null) {
+            ReservationModified::dispatch($result['booking'], $result['modification']);
+        }
+
+        return $result;
     }
 }

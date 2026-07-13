@@ -6,10 +6,16 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
+use Modules\Booking\Events\ReservationCancelled;
+use Modules\Booking\Events\ReservationConfirmed;
+use Modules\Booking\Events\ReservationModified;
+use Modules\Notification\Listeners\QueueGuestLifecycleNotification;
 use Modules\Payment\Contracts\PaymentGateway;
+use Modules\Payment\Events\PaymentReceiptIssued;
 use Modules\Payment\Gateways\StripeGateway;
 
 class AppServiceProvider extends ServiceProvider
@@ -38,6 +44,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Event::listen(ReservationConfirmed::class, QueueGuestLifecycleNotification::class);
+        Event::listen(ReservationModified::class, QueueGuestLifecycleNotification::class);
+        Event::listen(ReservationCancelled::class, QueueGuestLifecycleNotification::class);
+        Event::listen(PaymentReceiptIssued::class, QueueGuestLifecycleNotification::class);
+
         RateLimiter::for('auth', function (Request $request) {
             return Limit::perMinute(5)->by($request->ip());
         });

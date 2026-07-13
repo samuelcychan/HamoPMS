@@ -96,4 +96,6 @@ Checkout-created housekeeping tasks, assignment, cleaning transitions, SLAs, and
 
 Maintenance ticket CRUD, escalation, assignment, history, and room inventory impact are documented in [`docs/maintenance.md`](maintenance.md).
 
+Localized guest email templates, event triggers, retry behavior, and delivery status logging are documented in [`docs/guest-notifications.md`](guest-notifications.md).
+
 Cancellation windows, penalties, and non-refundable behavior are documented in [`docs/cancellations.md`](cancellations.md).
