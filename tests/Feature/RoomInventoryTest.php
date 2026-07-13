@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Role;
+use App\Models\RoleAssignment;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Property\Models\Property;
 use Modules\Property\Models\Room;
@@ -21,11 +24,18 @@ class RoomInventoryTest extends TestCase
     {
         parent::setUp();
 
+        $this->seed(RolePermissionSeeder::class);
+
         $this->user = User::factory()->create();
         $this->property = Property::create([
             'name' => 'Harbour Hotel',
             'address' => '1 Main Street',
             'type' => 'hotel',
+        ]);
+        RoleAssignment::create([
+            'user_id' => $this->user->id,
+            'role_id' => Role::where('slug', 'manager')->value('id'),
+            'property_id' => $this->property->id,
         ]);
     }
 

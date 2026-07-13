@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Role;
+use App\Models\RoleAssignment;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Modules\Property\Models\Property;
@@ -12,6 +15,12 @@ use Tests\TestCase;
 class ApiContractTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(RolePermissionSeeder::class);
+    }
 
     public function test_success_responses_use_data_envelope(): void
     {
@@ -32,6 +41,7 @@ class ApiContractTest extends TestCase
     public function test_not_found_errors_use_unified_contract(): void
     {
         $user = User::factory()->create();
+        $this->grantAdmin($user);
 
         $this->actingAs($user, 'sanctum')
             ->getJson('/api/v1/properties/999999')
@@ -42,6 +52,7 @@ class ApiContractTest extends TestCase
     public function test_paginated_responses_expose_pagination_metadata(): void
     {
         $user = User::factory()->create();
+        $this->grantAdmin($user);
         Property::create(['name' => 'Hotel', 'address' => '1 Main St', 'type' => 'hotel']);
 
         $this->actingAs($user, 'sanctum')
@@ -55,6 +66,7 @@ class ApiContractTest extends TestCase
     public function test_delete_responses_have_no_content(): void
     {
         $user = User::factory()->create();
+        $this->grantAdmin($user);
         $property = Property::create(['name' => 'Hotel', 'address' => '1 Main St', 'type' => 'hotel']);
 
         $this->actingAs($user, 'sanctum')
@@ -78,5 +90,13 @@ class ApiContractTest extends TestCase
                     'message' => 'The request could not be completed.',
                 ],
             ]);
+    }
+
+    private function grantAdmin(User $user): void
+    {
+        RoleAssignment::create([
+            'user_id' => $user->id,
+            'role_id' => Role::where('slug', 'admin')->value('id'),
+        ]);
     }
 }

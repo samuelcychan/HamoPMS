@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Payment\Http\Controllers\PaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -9,12 +10,15 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth:sanctum')->prefix('payments')->name('payments.')->group(function () {
-    Route::get('/', [\Modules\Payment\Http\Controllers\PaymentController::class, 'index'])
+    Route::get('/', [PaymentController::class, 'index'])
+        ->middleware('permission:payments.read')
         ->name('index');
 
-    Route::post('/', [\Modules\Payment\Http\Controllers\PaymentController::class, 'store'])
+    Route::post('/', [PaymentController::class, 'store'])
+        ->middleware('permission:payments.write')
         ->name('store');
 
-    Route::get('/{id}', [\Modules\Payment\Http\Controllers\PaymentController::class, 'show'])
+    Route::get('/{id}', [PaymentController::class, 'show'])
+        ->middleware('permission:payments.read')
         ->name('show');
 });

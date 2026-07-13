@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Folio\Http\Controllers\FolioController;
+use Modules\Folio\Http\Controllers\FolioLineItemController;
 
 /*
 |--------------------------------------------------------------------------
@@ -9,9 +11,11 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth:sanctum')->prefix('bookings/{booking_id}/folio')->name('folio.')->group(function () {
-    Route::get('/', [\Modules\Folio\Http\Controllers\FolioController::class, 'show'])
+    Route::get('/', [FolioController::class, 'show'])
+        ->middleware('permission:folios.read')
         ->name('show');
 
-    Route::post('/line-items', [\Modules\Folio\Http\Controllers\FolioLineItemController::class, 'store'])
+    Route::post('/line-items', [FolioLineItemController::class, 'store'])
+        ->middleware('permission:folios.write')
         ->name('line-items.store');
 });

@@ -33,6 +33,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
     // Module routes (loaded per domain module)
     require __DIR__.'/api/v1/users.php';
+    require __DIR__.'/api/v1/admin.php';
     require __DIR__.'/api/v1/properties.php';
     require __DIR__.'/api/v1/bookings.php';
     require __DIR__.'/api/v1/availability.php';

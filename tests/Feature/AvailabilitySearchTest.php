@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Role;
+use App\Models\RoleAssignment;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Modules\Booking\Models\Booking;
@@ -24,11 +27,18 @@ class AvailabilitySearchTest extends TestCase
     {
         parent::setUp();
 
+        $this->seed(RolePermissionSeeder::class);
+
         $this->user = User::factory()->create();
         $this->property = Property::create([
             'name' => 'Harbour Hotel',
             'address' => '1 Main Street',
             'type' => 'hotel',
+        ]);
+        RoleAssignment::create([
+            'user_id' => $this->user->id,
+            'role_id' => Role::where('slug', 'receptionist')->value('id'),
+            'property_id' => $this->property->id,
         ]);
     }
 
@@ -143,11 +153,11 @@ class AvailabilitySearchTest extends TestCase
     public function test_search_parameters_use_the_validation_contract(): void
     {
         $this->actingAs($this->user, 'sanctum')
-            ->getJson('/api/v1/availability?occupancy=0')
+            ->getJson("/api/v1/availability?property_id={$this->property->id}&occupancy=0")
             ->assertUnprocessable()
             ->assertJsonPath('error.code', 'VALIDATION_FAILED')
             ->assertJsonStructure([
-                'error' => ['details' => ['fields' => ['property_id', 'check_in', 'check_out', 'occupancy']]],
+                'error' => ['details' => ['fields' => ['check_in', 'check_out', 'occupancy']]],
             ]);
     }
 
