@@ -73,6 +73,23 @@ class OperationalReportController extends Controller
         );
     }
 
+    public function noShows(Request $request): JsonResponse|Response
+    {
+        $startedAt = hrtime(true);
+        [$date, $format] = $this->dateOptions($request);
+        $propertyId = $this->propertyContext->id($request);
+
+        return $this->respond(
+            'no-shows',
+            OperationalReportService::STAY_COLUMNS,
+            $this->reports->noShows($propertyId, $date),
+            ['date' => $date->toDateString()],
+            $format,
+            $startedAt,
+            $propertyId,
+        );
+    }
+
     public function occupancy(Request $request): JsonResponse|Response
     {
         $startedAt = hrtime(true);
@@ -85,6 +102,27 @@ class OperationalReportController extends Controller
             $this->reports->occupancy($propertyId, $date),
             ['date' => $date->toDateString()],
             $format,
+            $startedAt,
+            $propertyId,
+        );
+    }
+
+    public function roomStatus(Request $request): JsonResponse|Response
+    {
+        $startedAt = hrtime(true);
+        $validated = $request->validate([
+            'property_id' => ['sometimes', 'integer', 'min:1'],
+            'format' => ['sometimes', 'string', 'in:json,csv'],
+        ]);
+        $asOf = CarbonImmutable::now();
+        $propertyId = $this->propertyContext->id($request);
+
+        return $this->respond(
+            'room-status',
+            OperationalReportService::ROOM_STATUS_COLUMNS,
+            $this->reports->roomStatus($propertyId),
+            ['as_of' => $asOf->toIso8601String()],
+            $validated['format'] ?? 'json',
             $startedAt,
             $propertyId,
         );
@@ -128,21 +166,25 @@ class OperationalReportController extends Controller
             ]);
         }
 
-        return ApiResponse::success($report === 'occupancy' ? $rows[0] : $rows, 200, [
-            'report' => array_merge([
-                'name' => $report,
-                'property_id' => $propertyId,
-                'format' => 'json',
-                'columns' => $columns,
-                'row_count' => count($rows),
-                'generated_at' => CarbonImmutable::now()->toIso8601String(),
-            ], $scope),
-            'performance' => [
-                'duration_ms' => $durationMs,
-                'target_ms' => 250,
-                'within_target' => $durationMs <= 250,
+        return ApiResponse::success(
+            in_array($report, ['occupancy', 'room-status'], true) ? $rows[0] : $rows,
+            200,
+            [
+                'report' => array_merge([
+                    'name' => $report,
+                    'property_id' => $propertyId,
+                    'format' => 'json',
+                    'columns' => $columns,
+                    'row_count' => count($rows),
+                    'generated_at' => CarbonImmutable::now()->toIso8601String(),
+                ], $scope),
+                'performance' => [
+                    'duration_ms' => $durationMs,
+                    'target_ms' => 250,
+                    'within_target' => $durationMs <= 250,
+                ],
             ],
-        ]);
+        );
     }
 
     private function csv(array $columns, array $rows): string

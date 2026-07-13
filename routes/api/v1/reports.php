@@ -11,7 +11,9 @@ Route::middleware(['auth:sanctum', 'active', 'property.context', 'permission:res
         Route::get('/arrivals', [OperationalReportController::class, 'arrivals'])->name('arrivals');
         Route::get('/departures', [OperationalReportController::class, 'departures'])->name('departures');
         Route::get('/in-house', [OperationalReportController::class, 'inHouse'])->name('in-house');
+        Route::get('/no-shows', [OperationalReportController::class, 'noShows'])->name('no-shows');
         Route::get('/occupancy', [OperationalReportController::class, 'occupancy'])->name('occupancy');
+        Route::get('/room-status', [OperationalReportController::class, 'roomStatus'])->name('room-status');
 
         Route::get('/revenue', [RevenueReportController::class, 'index'])
             ->middleware('permission:folios.read')
