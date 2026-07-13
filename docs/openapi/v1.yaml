@@ -1469,6 +1469,51 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /reports/audit-events:
+    get:
+      tags: [Reports]
+      operationId: getFinancialAuditEvents
+      summary: Retrieve normalized immutable financial audit events
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportPropertyId'
+        - $ref: '#/components/parameters/PropertyHeader'
+        - name: source
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [folio_line_item, payment_operation, revenue_period_close]
+        - name: start_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Paginated financial audit events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialAuditEventCollectionResponse'
+        '400':
+          $ref: '#/components/responses/PropertyContextRequired'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /reports/revenue:
     get:
       tags: [Reports]
@@ -2639,6 +2684,49 @@ components:
         out_of_service_rooms:
           type: integer
           minimum: 0
+    FinancialAuditEvent:
+      type: object
+      required:
+        - source
+        - event_id
+        - occurred_at
+        - resource_type
+        - resource_id
+        - action
+        - status
+        - amount
+        - currency
+        - reference
+      properties:
+        source:
+          type: string
+          enum: [folio_line_item, payment_operation, revenue_period_close]
+        event_id:
+          $ref: '#/components/schemas/Identifier'
+        occurred_at:
+          type: string
+          format: date-time
+        actor_id:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        resource_type:
+          type: string
+          enum: [folio, payment, revenue_period_close]
+        resource_id:
+          $ref: '#/components/schemas/Identifier'
+        action:
+          type: string
+        status:
+          type: string
+        amount:
+          type: [string, 'null']
+          pattern: '^-?\d+\.\d{2}$'
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        reference:
+          type: string
     OperationalReportMeta:
       type: object
       required: [name, property_id, format, columns, row_count, generated_at]
@@ -3298,6 +3386,20 @@ components:
               $ref: '#/components/schemas/OperationalReportMeta'
             performance:
               $ref: '#/components/schemas/ReportPerformance'
+    FinancialAuditEventCollectionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FinancialAuditEvent'
+        meta:
+          type: object
+          required: [pagination]
+          properties:
+            pagination:
+              $ref: '#/components/schemas/Pagination'
     RevenueReportResponse:
       type: object
       required: [data, meta]

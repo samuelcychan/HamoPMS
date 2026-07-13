@@ -11,3 +11,9 @@ Payment reconciliation uses completed capture and refund operation timestamps. L
 `POST /api/v1/reports/revenue/period-close` requires `folios.adjust` and accepts the same property, period, and currency fields. It stores the complete report JSON, the closing actor and timestamp, and a SHA-256 checksum. The property, dates, and currency form a unique close scope. Repeating the same close returns the original snapshot without recomputing it, even if later ledger entries were posted.
 
 `GET /api/v1/reports/revenue/period-close/{id}` retrieves a snapshot under the active property context. Period-close rows cannot be updated or deleted through the model.
+
+## Immutable audit feed
+
+`GET /api/v1/reports/audit-events` requires `folios.read` and a property context. It returns a single reverse-chronological, paginated contract over immutable folio postings, payment operations, and revenue period-close snapshots. Each event includes its source identifier, timestamp, actor when known, resource, action, status, signed amount when applicable, currency, and a non-secret reference.
+
+Use `source` to select `folio_line_item`, `payment_operation`, or `revenue_period_close`. Inclusive `start_date` and `end_date` filters use `YYYY-MM-DD`, and `per_page` is limited to 100. The feed joins every source back to the active property, so events from another property are never returned.

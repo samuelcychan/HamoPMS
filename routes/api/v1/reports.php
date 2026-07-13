@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Reporting\Http\Controllers\FinancialAuditReportController;
 use Modules\Reporting\Http\Controllers\OperationalReportController;
 use Modules\Reporting\Http\Controllers\RevenueReportController;
 
@@ -14,6 +15,9 @@ Route::middleware(['auth:sanctum', 'active', 'property.context', 'permission:res
         Route::get('/no-shows', [OperationalReportController::class, 'noShows'])->name('no-shows');
         Route::get('/occupancy', [OperationalReportController::class, 'occupancy'])->name('occupancy');
         Route::get('/room-status', [OperationalReportController::class, 'roomStatus'])->name('room-status');
+        Route::get('/audit-events', [FinancialAuditReportController::class, 'index'])
+            ->middleware('permission:folios.read')
+            ->name('audit-events');
 
         Route::get('/revenue', [RevenueReportController::class, 'index'])
             ->middleware('permission:folios.read')
