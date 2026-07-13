@@ -67,6 +67,7 @@ class ReservationCreationTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.user_id', $this->user->id)
             ->assertJsonPath('data.property_id', $this->property->id)
+            ->assertJsonPath('data.nightly_rate', '250.00')
             ->assertJsonPath('data.status', Booking::STATUS_CONFIRMED);
 
         $this->assertDatabaseHas('bookings', [

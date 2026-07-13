@@ -308,6 +308,31 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /bookings/{bookingId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/BookingId'
+    post:
+      tags: [Reservations]
+      operationId: cancelReservation
+      summary: Cancel a pending or confirmed reservation
+      description: Applies the reservation's configured policy and posts the resulting folio entries.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Cancelled reservation and evaluated policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancellationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
 components:
   securitySchemes:
     bearerAuth:
@@ -459,6 +484,9 @@ components:
           type:
             - string
             - 'null'
+        cancellation_policy:
+          type: string
+          enum: [flexible, standard, non_refundable]
     UpdateBookingRequest:
       type: object
       additionalProperties: false
@@ -594,6 +622,27 @@ components:
             - 'null'
           items:
             type: string
+        nightly_rate:
+          type:
+            - string
+            - 'null'
+          pattern: '^\d+\.\d{2}$'
+        cancellation_policy:
+          type: string
+        cancelled_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        cancelled_by:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        cancellation_penalty:
+          type:
+            - string
+            - 'null'
+          pattern: '^\d+\.\d{2}$'
         room:
           oneOf:
             - $ref: '#/components/schemas/Room'
@@ -724,6 +773,31 @@ components:
           properties:
             pagination:
               $ref: '#/components/schemas/Pagination'
+    CancellationResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/Booking'
+        meta:
+          type: object
+          required: [cancellation]
+          properties:
+            cancellation:
+              type: object
+              required: [policy, is_free, is_non_refundable, hours_before_check_in, penalty]
+              properties:
+                policy:
+                  type: string
+                is_free:
+                  type: boolean
+                is_non_refundable:
+                  type: boolean
+                hours_before_check_in:
+                  type: integer
+                penalty:
+                  type: string
+                  pattern: '^\d+\.\d{2}$'
     AvailabilityResponse:
       type: object
       required: [data, meta]

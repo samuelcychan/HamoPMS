@@ -52,7 +52,12 @@ class BookingController extends Controller
             'check_out' => ['required', 'date', 'after:check_in'],
             'guests' => ['required', 'integer', 'min:1'],
             'notes' => ['nullable', 'string'],
+            'cancellation_policy' => ['sometimes', 'string', Rule::in(array_keys(config('cancellation.policies')))],
         ]);
+        $validated['cancellation_policy'] ??= config('cancellation.default');
+        $validated['cancellation_policy_snapshot'] = config(
+            "cancellation.policies.{$validated['cancellation_policy']}",
+        );
 
         $booking = $this->reservations->createConfirmed($request->user()->id, $validated);
 
