@@ -2,6 +2,7 @@
 
 namespace Modules\Folio\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LogicException;
@@ -34,12 +35,12 @@ class FolioLineItem extends Model
         return $this->belongsTo(Folio::class);
     }
 
-    protected function performUpdate(\Illuminate\Database\Eloquent\Builder $query): bool
+    protected function performUpdate(Builder $query): bool
     {
         throw new LogicException('Folio line items are immutable and cannot be updated.');
     }
 
-    public function delete(): bool|null
+    public function delete(): ?bool
     {
         throw new LogicException('Folio line items are immutable and cannot be deleted.');
     }
