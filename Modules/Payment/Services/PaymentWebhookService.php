@@ -4,6 +4,7 @@ namespace Modules\Payment\Services;
 
 use Illuminate\Support\Facades\DB;
 use Modules\Booking\Services\ReservationRateCalculator;
+use Modules\Payment\Events\PaymentReceiptIssued;
 use Modules\Payment\Models\Payment;
 use Modules\Payment\Models\PaymentWebhookEvent;
 
@@ -13,7 +14,7 @@ class PaymentWebhookService
 
     public function handle(string $gateway, array $payload): PaymentWebhookEvent
     {
-        return DB::transaction(function () use ($gateway, $payload): PaymentWebhookEvent {
+        $result = DB::transaction(function () use ($gateway, $payload): array {
             $eventId = (string) ($payload['id'] ?? '');
             $type = (string) ($payload['type'] ?? '');
             $event = PaymentWebhookEvent::query()
@@ -23,7 +24,7 @@ class PaymentWebhookService
                 ->first();
 
             if ($event !== null) {
-                return $event;
+                return ['event' => $event, 'receipt_payment' => null];
             }
 
             $event = PaymentWebhookEvent::create([
@@ -41,13 +42,28 @@ class PaymentWebhookService
                 ->first();
 
             if ($payment !== null) {
+                $wasCompleted = $payment->status === Payment::STATUS_COMPLETED;
                 $this->reconcile($payment, $type, is_array($object) ? $object : []);
+                $payment->refresh();
             }
 
             $event->update(['processed_at' => now()]);
 
-            return $event->refresh();
+            return [
+                'event' => $event->refresh(),
+                'receipt_payment' => isset($wasCompleted)
+                    && ! $wasCompleted
+                    && $payment->status === Payment::STATUS_COMPLETED
+                        ? $payment
+                        : null,
+            ];
         });
+
+        if ($result['receipt_payment'] !== null) {
+            PaymentReceiptIssued::dispatch($result['receipt_payment']);
+        }
+
+        return $result['event'];
     }
 
     private function reconcile(Payment $payment, string $type, array $object): void
