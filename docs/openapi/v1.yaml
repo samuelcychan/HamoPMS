@@ -19,6 +19,8 @@ tags:
     description: Reservation creation, retrieval, updates, and deletion.
   - name: Check-in
     description: Front-desk room assignment and guest arrival processing.
+  - name: Check-out
+    description: Folio finalization, balance validation, and room release.
   - name: In-stay modifications
     description: Checked-in room moves, extensions, and early departures.
 paths:
@@ -310,6 +312,33 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /bookings/{bookingId}/check-out:
+    parameters:
+      - $ref: '#/components/parameters/BookingId'
+    post:
+      tags: [Check-out]
+      operationId: checkOutReservation
+      summary: Finalize the folio and check out a reservation
+      description: Applies any late fee, requires a zero settled balance, and releases the occupied room.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Checked-out reservation and closure metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckOutResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/FolioBalanceOutstanding'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /bookings/{bookingId}/room-move:
     parameters:
       - $ref: '#/components/parameters/BookingId'
@@ -478,6 +507,12 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
     InventoryUnavailable:
       description: Inventory is unavailable for one or more requested nights
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    FolioBalanceOutstanding:
+      description: The folio has a non-zero balance after completed payments
       content:
         application/json:
           schema:
@@ -695,6 +730,15 @@ components:
           oneOf:
             - $ref: '#/components/schemas/Identifier'
             - type: 'null'
+        checked_out_at:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        checked_out_by:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
         notes:
           type:
             - string
@@ -731,6 +775,10 @@ components:
             - $ref: '#/components/schemas/Room'
             - type: 'null'
         checked_in_by_user:
+          oneOf:
+            - $ref: '#/components/schemas/User'
+            - type: 'null'
+        checked_out_by_user:
           oneOf:
             - $ref: '#/components/schemas/User'
             - type: 'null'
@@ -864,6 +912,28 @@ components:
                 rate_difference:
                   type: string
                   pattern: '^-?\d+\.\d{2}$'
+    CheckOutResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/Booking'
+        meta:
+          type: object
+          required: [checkout]
+          properties:
+            checkout:
+              type: object
+              required: [folio_id, outstanding_balance, late_checkout_fee]
+              properties:
+                folio_id:
+                  $ref: '#/components/schemas/Identifier'
+                outstanding_balance:
+                  type: string
+                  pattern: '^-?\d+\.\d{2}$'
+                late_checkout_fee:
+                  type: string
+                  pattern: '^\d+\.\d{2}$'
     BookingCollectionResponse:
       type: object
       required: [data, meta]
