@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Role;
+use App\Models\RoleAssignment;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Booking\Models\Booking;
 use Modules\Property\Models\Property;
@@ -24,6 +27,8 @@ class ReservationCreationTest extends TestCase
     {
         parent::setUp();
 
+        $this->seed(RolePermissionSeeder::class);
+
         $this->user = User::factory()->create();
         $this->property = Property::create([
             'name' => 'Harbour Hotel',
@@ -43,6 +48,11 @@ class ReservationCreationTest extends TestCase
             'room_type_id' => $this->roomType->id,
             'number' => '101',
             'status' => Room::STATUS_CLEAN,
+        ]);
+        RoleAssignment::create([
+            'user_id' => $this->user->id,
+            'role_id' => Role::where('slug', 'receptionist')->value('id'),
+            'property_id' => $this->property->id,
         ]);
     }
 

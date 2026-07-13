@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Booking\Http\Controllers\BookingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -9,18 +10,23 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth:sanctum')->prefix('bookings')->name('bookings.')->group(function () {
-    Route::get('/', [\Modules\Booking\Http\Controllers\BookingController::class, 'index'])
+    Route::get('/', [BookingController::class, 'index'])
+        ->middleware('permission:reservations.read')
         ->name('index');
 
-    Route::post('/', [\Modules\Booking\Http\Controllers\BookingController::class, 'store'])
+    Route::post('/', [BookingController::class, 'store'])
+        ->middleware('permission:reservations.write')
         ->name('store');
 
-    Route::get('/{id}', [\Modules\Booking\Http\Controllers\BookingController::class, 'show'])
+    Route::get('/{id}', [BookingController::class, 'show'])
+        ->middleware('permission:reservations.read')
         ->name('show');
 
-    Route::put('/{id}', [\Modules\Booking\Http\Controllers\BookingController::class, 'update'])
+    Route::put('/{id}', [BookingController::class, 'update'])
+        ->middleware('permission:reservations.write')
         ->name('update');
 
-    Route::delete('/{id}', [\Modules\Booking\Http\Controllers\BookingController::class, 'destroy'])
+    Route::delete('/{id}', [BookingController::class, 'destroy'])
+        ->middleware('permission:reservations.write')
         ->name('destroy');
 });

@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Role;
+use App\Models\RoleAssignment;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Booking\Models\Booking;
 use Modules\Folio\Models\Folio;
@@ -22,6 +25,8 @@ class FolioTest extends TestCase
     {
         parent::setUp();
 
+        $this->seed(RolePermissionSeeder::class);
+
         $this->user = User::factory()->create();
 
         $property = Property::create([
@@ -37,6 +42,11 @@ class FolioTest extends TestCase
             'check_out' => now()->addDays(3)->toDateString(),
             'guests' => 2,
             'status' => 'confirmed',
+        ]);
+        RoleAssignment::create([
+            'user_id' => $this->user->id,
+            'role_id' => Role::where('slug', 'receptionist')->value('id'),
+            'property_id' => $property->id,
         ]);
     }
 
@@ -173,6 +183,11 @@ class FolioTest extends TestCase
     public function test_cannot_access_another_users_folio(): void
     {
         $otherUser = User::factory()->create();
+        RoleAssignment::create([
+            'user_id' => $otherUser->id,
+            'role_id' => Role::where('slug', 'receptionist')->value('id'),
+            'property_id' => $this->booking->property_id,
+        ]);
         $token = $otherUser->createToken('other-token')->plainTextToken;
 
         $this->withHeader('Authorization', 'Bearer '.$token)
