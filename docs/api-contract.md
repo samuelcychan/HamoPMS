@@ -100,4 +100,6 @@ Localized guest email templates, event triggers, retry behavior, and delivery st
 
 Password policy, reset endpoints, account lockout, token revocation, and persistent auth audit events are documented in [`docs/auth-security.md`](auth-security.md).
 
+Property-scoped amenity management, room block restrictions, and availability state history are documented in [`docs/room-inventory.md`](room-inventory.md).
+
 Cancellation windows, penalties, and non-refundable behavior are documented in [`docs/cancellations.md`](cancellations.md).

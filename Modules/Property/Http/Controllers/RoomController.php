@@ -29,7 +29,7 @@ class RoomController extends Controller
 
         $rooms = Room::query()
             ->where('property_id', $propertyId)
-            ->with('roomType')
+            ->with('roomType', 'amenities')
             ->when(
                 isset($validated['room_type_id']),
                 fn ($query) => $query->where('room_type_id', $validated['room_type_id']),
@@ -53,14 +53,14 @@ class RoomController extends Controller
             'property_id' => $property->id,
         ]);
 
-        return ApiResponse::success($room, 201);
+        return ApiResponse::success($room->load('roomType', 'amenities'), 201);
     }
 
     public function show(string $propertyId, string $roomId): JsonResponse
     {
         $room = $this->findRoom($propertyId, $roomId);
 
-        return ApiResponse::success($room->load('roomType'));
+        return ApiResponse::success($room->load('roomType', 'amenities'));
     }
 
     public function update(Request $request, string $propertyId, string $roomId): JsonResponse
@@ -69,7 +69,7 @@ class RoomController extends Controller
         $room = $this->findRoom($propertyId, $roomId);
         $room->update($request->validate($this->rules($property, $room)));
 
-        return ApiResponse::success($room->load('roomType'));
+        return ApiResponse::success($room->load('roomType', 'amenities'));
     }
 
     public function destroy(string $propertyId, string $roomId): Response
@@ -127,6 +127,25 @@ class RoomController extends Controller
                 ->latest('id')
                 ->paginate($request->integer('per_page', 15)),
         );
+    }
+
+    public function syncAmenities(Request $request, string $propertyId, string $roomId): JsonResponse
+    {
+        $validated = $request->validate([
+            'amenity_ids' => ['required', 'array', 'max:100'],
+            'amenity_ids.*' => [
+                'integer',
+                'distinct',
+                Rule::exists('amenities', 'id')
+                    ->where(fn ($query) => $query
+                        ->where('property_id', $propertyId)
+                        ->whereNull('deleted_at')),
+            ],
+        ]);
+        $room = $this->findRoom($propertyId, $roomId);
+        $room->amenities()->sync($validated['amenity_ids']);
+
+        return ApiResponse::success($room->load('roomType', 'amenities'));
     }
 
     private function findRoom(string $propertyId, string $roomId): Room
