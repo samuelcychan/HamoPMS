@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Modules\Property\Models\Property;
+use RuntimeException;
 use Tests\TestCase;
 
 class ApiContractTest extends TestCase
@@ -48,5 +50,33 @@ class ApiContractTest extends TestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('meta.pagination.per_page', 1)
             ->assertJsonPath('meta.pagination.total', 1);
+    }
+
+    public function test_delete_responses_have_no_content(): void
+    {
+        $user = User::factory()->create();
+        $property = Property::create(['name' => 'Hotel', 'address' => '1 Main St', 'type' => 'hotel']);
+
+        $this->actingAs($user, 'sanctum')
+            ->deleteJson("/api/v1/properties/{$property->id}")
+            ->assertNoContent();
+
+        $this->assertSoftDeleted($property);
+    }
+
+    public function test_unexpected_api_errors_use_unified_contract(): void
+    {
+        Route::get('/api/v1/contract/unexpected-error', function () {
+            throw new RuntimeException('Sensitive implementation detail');
+        });
+
+        $this->getJson('/api/v1/contract/unexpected-error')
+            ->assertInternalServerError()
+            ->assertExactJson([
+                'error' => [
+                    'code' => 'HTTP_ERROR',
+                    'message' => 'The request could not be completed.',
+                ],
+            ]);
     }
 }

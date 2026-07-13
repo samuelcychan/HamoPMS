@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Modules\Property\Models\Property;
 
 class PropertyController extends Controller
@@ -55,11 +56,11 @@ class PropertyController extends Controller
         return ApiResponse::success($property);
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(string $id): Response
     {
         $property = Property::findOrFail($id);
         $property->delete();
 
-        return response()->json(null, 204);
+        return response()->noContent();
     }
 }

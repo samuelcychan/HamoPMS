@@ -48,12 +48,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 : null;
         });
 
-        $exceptions->render(function (\Throwable $exception, Request $request) {
-            if (! $request->is('api/*') || ! $exception instanceof HttpExceptionInterface) {
+        $exceptions->render(function (Throwable $exception, Request $request) {
+            if (! $request->is('api/*')) {
                 return null;
             }
 
-            $status = $exception->getStatusCode();
+            $status = $exception instanceof HttpExceptionInterface
+                ? $exception->getStatusCode()
+                : 500;
             $codes = [
                 401 => 'UNAUTHENTICATED',
                 403 => 'FORBIDDEN',

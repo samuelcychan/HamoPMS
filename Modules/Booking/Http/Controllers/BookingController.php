@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Modules\Booking\Models\Booking;
 
 class BookingController extends Controller
@@ -59,11 +60,11 @@ class BookingController extends Controller
         return ApiResponse::success($booking);
     }
 
-    public function destroy(Request $request, string $id): JsonResponse
+    public function destroy(Request $request, string $id): Response
     {
         $booking = Booking::where('user_id', $request->user()->id)->findOrFail($id);
         $booking->delete();
 
-        return response()->json(null, 204);
+        return response()->noContent();
     }
 }

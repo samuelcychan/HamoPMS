@@ -63,6 +63,12 @@ class AuthTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.message', 'Logged out successfully.');
 
+        $this->assertDatabaseMissing('personal_access_tokens', [
+            'id' => $accessToken->accessToken->id,
+        ]);
+
+        $this->app['auth']->forgetGuards();
+
         $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/v1/auth/me')
             ->assertUnauthorized();
