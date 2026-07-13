@@ -32,6 +32,8 @@ Errors use a stable machine-readable code and a human-readable message:
 
 Standard codes include `UNAUTHENTICATED`, `FORBIDDEN`, `RESOURCE_NOT_FOUND`, `METHOD_NOT_ALLOWED`, `CONFLICT`, `RATE_LIMIT_EXCEEDED`, `VALIDATION_FAILED`, and `HTTP_ERROR`.
 
+Reservation creation returns `INVENTORY_UNAVAILABLE` with status `409` when an active reservation already occupies the property for any of the requested nights.
+
 Validation errors include field messages under `error.details.fields`:
 
 ```json

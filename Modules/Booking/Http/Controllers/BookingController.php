@@ -8,9 +8,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Modules\Booking\Models\Booking;
+use Modules\Booking\Services\ReservationService;
 
 class BookingController extends Controller
 {
+    public function __construct(private readonly ReservationService $reservations) {}
+
     public function index(Request $request): JsonResponse
     {
         $request->validate(['per_page' => ['sometimes', 'integer', 'min:1', 'max:100']]);
@@ -30,8 +33,15 @@ class BookingController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        $validated['user_id'] = $request->user()->id;
-        $booking = Booking::create($validated);
+        $booking = $this->reservations->createConfirmed($request->user()->id, $validated);
+
+        if ($booking === null) {
+            return ApiResponse::error(
+                'INVENTORY_UNAVAILABLE',
+                'The property is unavailable for the requested dates.',
+                409,
+            );
+        }
 
         return ApiResponse::success($booking, 201);
     }
