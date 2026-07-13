@@ -98,6 +98,8 @@ Maintenance ticket CRUD, escalation, assignment, history, and room inventory imp
 
 Localized guest email templates, event triggers, retry behavior, and delivery status logging are documented in [`docs/guest-notifications.md`](guest-notifications.md).
 
+Signed canonical inbound events, adapter contracts, idempotency, processing observability, and dead-letter recovery are documented in [`docs/integrations.md`](integrations.md).
+
 Password policy, reset endpoints, account lockout, token revocation, and persistent auth audit events are documented in [`docs/auth-security.md`](auth-security.md).
 
 Property-scoped amenity management, room block restrictions, and availability state history are documented in [`docs/room-inventory.md`](room-inventory.md).
