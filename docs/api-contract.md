@@ -77,3 +77,5 @@ Collection endpoints accept `page` and `per_page` query parameters. `per_page` d
 ```
 
 Filters are query parameters named after the resource field (for example, `status=confirmed`). Multiple filters are combined with AND semantics. Unsupported filters are ignored until an endpoint documents support for them.
+
+Reservation modification semantics and folio adjustments are documented in [`docs/reservation-modifications.md`](reservation-modifications.md).

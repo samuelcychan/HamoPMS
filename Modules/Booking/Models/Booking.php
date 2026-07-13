@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Property\Models\Room;
 use Modules\Property\Models\RoomType;
@@ -42,6 +43,7 @@ class Booking extends Model
         'checked_in_at',
         'checked_in_by',
         'notes',
+        'special_requests',
     ];
 
     protected function casts(): array
@@ -51,6 +53,7 @@ class Booking extends Model
             'check_out' => 'date',
             'guests' => 'integer',
             'checked_in_at' => 'datetime',
+            'special_requests' => 'array',
         ];
     }
 
@@ -67,5 +70,10 @@ class Booking extends Model
     public function checkedInByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'checked_in_by');
+    }
+
+    public function modifications(): HasMany
+    {
+        return $this->hasMany(BookingModification::class);
     }
 }

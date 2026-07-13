@@ -4,13 +4,18 @@ namespace Modules\Booking\Services;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Modules\Booking\Models\Booking;
 use Modules\Property\Models\Room;
 use Modules\Property\Models\RoomType;
 
 class ReservationService
 {
-    public function __construct(private readonly InventoryCounter $inventory) {}
+    public function __construct(
+        private readonly InventoryCounter $inventory,
+        private readonly ReservationRateCalculator $rates,
+        private readonly ReservationFolioService $folios,
+    ) {}
 
     /**
      * Create and confirm a reservation, or return null when inventory is unavailable.
@@ -35,6 +40,12 @@ class ReservationService
                 ->where('status', '!=', Room::STATUS_OUT_OF_SERVICE)
                 ->count();
 
+            if ((int) $attributes['guests'] > $roomType->max_occupancy) {
+                throw ValidationException::withMessages([
+                    'guests' => ['The guest count exceeds the selected room type capacity.'],
+                ]);
+            }
+
             $overlappingBookings = Booking::query()
                 ->where('room_type_id', $roomType->id)
                 ->whereIn('status', Booking::INVENTORY_BLOCKING_STATUSES)
@@ -51,11 +62,15 @@ class ReservationService
                 return null;
             }
 
-            return Booking::create([
+            $booking = Booking::create([
                 ...$attributes,
                 'user_id' => $userId,
                 'status' => Booking::STATUS_CONFIRMED,
             ]);
+            $totalCents = $this->rates->totalCents($roomType->base_rate, $checkIn, $checkOut);
+            $this->folios->ensureRoomRateBaseline($booking, $totalCents);
+
+            return $booking;
         });
     }
 }
