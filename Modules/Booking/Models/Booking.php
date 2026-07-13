@@ -4,7 +4,9 @@ namespace Modules\Booking\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Property\Models\RoomType;
 
 class Booking extends Model
 {
@@ -26,6 +28,7 @@ class Booking extends Model
     protected $fillable = [
         'user_id',
         'property_id',
+        'room_type_id',
         'check_in',
         'check_out',
         'guests',
@@ -40,5 +43,10 @@ class Booking extends Model
             'check_out' => 'date',
             'guests' => 'integer',
         ];
+    }
+
+    public function roomType(): BelongsTo
+    {
+        return $this->belongsTo(RoomType::class);
     }
 }
