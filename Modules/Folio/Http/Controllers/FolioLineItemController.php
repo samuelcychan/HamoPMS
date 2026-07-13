@@ -20,7 +20,7 @@ class FolioLineItemController extends Controller
         $validated = $request->validate([
             'type' => ['required', 'string', 'in:'.implode(',', FolioLineItem::POSTABLE_TYPES)],
             'description' => ['required', 'string', 'max:255'],
-            'amount' => ['required', 'numeric'],
+            'amount' => ['required', 'numeric', 'gt:0'],
         ]);
 
         $folio = Folio::firstOrCreate(

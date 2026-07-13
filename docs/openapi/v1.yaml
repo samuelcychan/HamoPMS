@@ -23,6 +23,8 @@ tags:
     description: Folio finalization, balance validation, and room release.
   - name: In-stay modifications
     description: Checked-in room moves, extensions, and early departures.
+  - name: Ancillary charges
+    description: Property charge types and immutable add-on folio postings.
 paths:
   /auth/register:
     post:
@@ -430,6 +432,150 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
+  /properties/{propertyId}/ancillary-charge-types:
+    parameters:
+      - $ref: '#/components/parameters/PropertyId'
+    get:
+      tags: [Ancillary charges]
+      operationId: listAncillaryChargeTypes
+      summary: List property ancillary charge types
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Paginated charge types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AncillaryChargeTypeCollectionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Ancillary charges]
+      operationId: createAncillaryChargeType
+      summary: Configure a property ancillary charge type
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AncillaryChargeTypeRequest'
+      responses:
+        '201':
+          description: Charge type created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AncillaryChargeTypeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /properties/{propertyId}/ancillary-charge-types/{chargeTypeId}:
+    parameters:
+      - $ref: '#/components/parameters/PropertyId'
+      - $ref: '#/components/parameters/ChargeTypeId'
+    put:
+      tags: [Ancillary charges]
+      operationId: updateAncillaryChargeType
+      summary: Update a property ancillary charge type
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AncillaryChargeTypeUpdateRequest'
+      responses:
+        '200':
+          description: Charge type updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AncillaryChargeTypeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /bookings/{bookingId}/folio/ancillary-charges:
+    parameters:
+      - $ref: '#/components/parameters/BookingId'
+    post:
+      tags: [Ancillary charges]
+      operationId: postAncillaryCharge
+      summary: Post an ancillary charge and automatic tax
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AncillaryChargeRequest'
+      responses:
+        '201':
+          description: Charge and tax posted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AncillaryChargeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /bookings/{bookingId}/folio/ancillary-charges/{lineItemId}/adjustments:
+    parameters:
+      - $ref: '#/components/parameters/BookingId'
+      - $ref: '#/components/parameters/LineItemId'
+    post:
+      tags: [Ancillary charges]
+      operationId: adjustAncillaryCharge
+      summary: Append an authorized adjustment or void
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AncillaryAdjustmentRequest'
+      responses:
+        '201':
+          description: Adjustment or void posted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AncillaryAdjustmentResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
 components:
   securitySchemes:
     bearerAuth:
@@ -439,6 +585,24 @@ components:
   parameters:
     BookingId:
       name: bookingId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Identifier'
+    PropertyId:
+      name: propertyId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Identifier'
+    ChargeTypeId:
+      name: chargeTypeId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Identifier'
+    LineItemId:
+      name: lineItemId
       in: path
       required: true
       schema:
@@ -627,6 +791,73 @@ components:
       properties:
         room_id:
           $ref: '#/components/schemas/Identifier'
+    AncillaryChargeTypeRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name, tax_rate]
+      properties:
+        code:
+          type: string
+          maxLength: 50
+        name:
+          type: string
+          maxLength: 255
+        tax_rate:
+          type: number
+          minimum: 0
+          maximum: 100
+        is_active:
+          type: boolean
+    AncillaryChargeTypeUpdateRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        code:
+          type: string
+          maxLength: 50
+        name:
+          type: string
+          maxLength: 255
+        tax_rate:
+          type: number
+          minimum: 0
+          maximum: 100
+        is_active:
+          type: boolean
+    AncillaryChargeRequest:
+      type: object
+      additionalProperties: false
+      required: [charge_type_id, amount]
+      properties:
+        charge_type_id:
+          $ref: '#/components/schemas/Identifier'
+        amount:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 99999999.99
+        description:
+          type:
+            - string
+            - 'null'
+          maxLength: 255
+    AncillaryAdjustmentRequest:
+      type: object
+      additionalProperties: false
+      required: [action, reason]
+      properties:
+        action:
+          type: string
+          enum: [adjustment, void]
+        amount:
+          type:
+            - number
+            - 'null'
+          minimum: -99999999.99
+          maximum: 99999999.99
+        reason:
+          type: string
+          maxLength: 255
     RoomMoveRequest:
       type: object
       additionalProperties: false
@@ -686,6 +917,58 @@ components:
     BookingStatus:
       type: string
       enum: [pending, confirmed, checked_in, cancelled, completed]
+    AncillaryChargeType:
+      type: object
+      required: [id, property_id, code, name, tax_rate, is_active]
+      properties:
+        id:
+          $ref: '#/components/schemas/Identifier'
+        property_id:
+          $ref: '#/components/schemas/Identifier'
+        code:
+          type: string
+        name:
+          type: string
+        tax_rate:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+        is_active:
+          type: boolean
+    FolioLineItem:
+      type: object
+      required: [id, folio_id, type, description, amount, posted_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Identifier'
+        folio_id:
+          $ref: '#/components/schemas/Identifier'
+        ancillary_charge_type_id:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        related_line_item_id:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        posted_by:
+          oneOf:
+            - $ref: '#/components/schemas/Identifier'
+            - type: 'null'
+        type:
+          type: string
+        description:
+          type: string
+        amount:
+          type: string
+          pattern: '^-?\d+\.\d{2}$'
+        tax_rate:
+          type:
+            - string
+            - 'null'
+          pattern: '^\d+\.\d{2}$'
+        posted_at:
+          type: string
+          format: date-time
     Booking:
       type: object
       required:
@@ -934,6 +1217,60 @@ components:
                 late_checkout_fee:
                   type: string
                   pattern: '^\d+\.\d{2}$'
+    AncillaryChargeTypeResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/AncillaryChargeType'
+    AncillaryChargeTypeCollectionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AncillaryChargeType'
+        meta:
+          type: object
+          required: [pagination]
+          properties:
+            pagination:
+              $ref: '#/components/schemas/Pagination'
+    AncillaryChargeResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [charge, tax, balance]
+          properties:
+            charge:
+              $ref: '#/components/schemas/FolioLineItem'
+            tax:
+              oneOf:
+                - $ref: '#/components/schemas/FolioLineItem'
+                - type: 'null'
+            balance:
+              type: string
+              pattern: '^-?\d+\.\d{2}$'
+    AncillaryAdjustmentResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [entry, tax, balance]
+          properties:
+            entry:
+              $ref: '#/components/schemas/FolioLineItem'
+            tax:
+              oneOf:
+                - $ref: '#/components/schemas/FolioLineItem'
+                - type: 'null'
+            balance:
+              type: string
+              pattern: '^-?\d+\.\d{2}$'
     BookingCollectionResponse:
       type: object
       required: [data, meta]
