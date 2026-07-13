@@ -66,4 +66,15 @@ class User extends Authenticatable
             ->whereHas('role.permissions', fn ($query) => $query->where('slug', $permission))
             ->exists();
     }
+
+    public function hasPropertyAccess(int $propertyId): bool
+    {
+        return $this->roleAssignments()
+            ->where(
+                fn ($query) => $query
+                    ->whereNull('property_id')
+                    ->orWhere('property_id', $propertyId),
+            )
+            ->exists();
+    }
 }

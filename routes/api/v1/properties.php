@@ -20,7 +20,7 @@ Route::middleware('auth:sanctum')->prefix('properties')->name('properties.')->gr
         ->middleware('permission:properties.write')
         ->name('store');
 
-    Route::prefix('/{propertyId}')->group(function () {
+    Route::middleware('property.context')->prefix('/{propertyId}')->group(function () {
         Route::get('/room-types', [RoomTypeController::class, 'index'])
             ->middleware('permission:rooms.read')
             ->name('room-types.index');
@@ -58,17 +58,17 @@ Route::middleware('auth:sanctum')->prefix('properties')->name('properties.')->gr
         Route::get('/rooms/{roomId}/status-history', [RoomController::class, 'statusHistory'])
             ->middleware('permission:rooms.read')
             ->name('rooms.status-history.index');
+
+        Route::get('/', [PropertyController::class, 'show'])
+            ->middleware('permission:properties.read')
+            ->name('show');
+
+        Route::put('/', [PropertyController::class, 'update'])
+            ->middleware('permission:properties.write')
+            ->name('update');
+
+        Route::delete('/', [PropertyController::class, 'destroy'])
+            ->middleware('permission:properties.write')
+            ->name('destroy');
     });
-
-    Route::get('/{propertyId}', [PropertyController::class, 'show'])
-        ->middleware('permission:properties.read')
-        ->name('show');
-
-    Route::put('/{propertyId}', [PropertyController::class, 'update'])
-        ->middleware('permission:properties.write')
-        ->name('update');
-
-    Route::delete('/{propertyId}', [PropertyController::class, 'destroy'])
-        ->middleware('permission:properties.write')
-        ->name('destroy');
 });

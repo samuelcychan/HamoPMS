@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\RequirePermission;
+use App\Http\Middleware\ResolvePropertyContext;
 use App\Http\Responses\ApiResponse;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
         $middleware->alias([
             'permission' => RequirePermission::class,
+            'property.context' => ResolvePropertyContext::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -4,6 +4,8 @@ namespace Modules\Booking\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
+use App\Support\PropertyContext;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -13,12 +15,17 @@ use Modules\Booking\Services\ReservationService;
 
 class BookingController extends Controller
 {
-    public function __construct(private readonly ReservationService $reservations) {}
+    public function __construct(
+        private readonly ReservationService $reservations,
+        private readonly PropertyContext $propertyContext,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
         $request->validate(['per_page' => ['sometimes', 'integer', 'min:1', 'max:100']]);
-        $bookings = Booking::where('user_id', $request->user()->id)
+        $bookings = $this->propertyContext
+            ->scope(Booking::query(), $request)
+            ->where('user_id', $request->user()->id)
             ->paginate($request->integer('per_page', 15));
 
         return ApiResponse::paginated($bookings);
@@ -59,14 +66,14 @@ class BookingController extends Controller
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $booking = Booking::where('user_id', $request->user()->id)->findOrFail($id);
+        $booking = $this->bookingQuery($request)->findOrFail($id);
 
         return ApiResponse::success($booking);
     }
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $booking = Booking::where('user_id', $request->user()->id)->findOrFail($id);
+        $booking = $this->bookingQuery($request)->findOrFail($id);
 
         $validated = $request->validate([
             'check_in' => ['sometimes', 'date', 'after_or_equal:today'],
@@ -83,9 +90,16 @@ class BookingController extends Controller
 
     public function destroy(Request $request, string $id): Response
     {
-        $booking = Booking::where('user_id', $request->user()->id)->findOrFail($id);
+        $booking = $this->bookingQuery($request)->findOrFail($id);
         $booking->delete();
 
         return response()->noContent();
+    }
+
+    private function bookingQuery(Request $request): Builder
+    {
+        return $this->propertyContext
+            ->scope(Booking::query(), $request)
+            ->where('user_id', $request->user()->id);
     }
 }
