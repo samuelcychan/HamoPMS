@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Folio\Http\Controllers\AncillaryChargeTypeController;
+use Modules\Property\Http\Controllers\HousekeepingTaskController;
 use Modules\Property\Http\Controllers\PropertyController;
 use Modules\Property\Http\Controllers\RoomController;
 use Modules\Property\Http\Controllers\RoomTypeController;
@@ -22,6 +23,22 @@ Route::middleware(['auth:sanctum', 'active'])->prefix('properties')->name('prope
         ->name('store');
 
     Route::middleware('property.context')->prefix('/{propertyId}')->group(function () {
+        Route::get('/housekeeping-tasks', [HousekeepingTaskController::class, 'index'])
+            ->middleware('permission:rooms.read')
+            ->name('housekeeping-tasks.index');
+        Route::get('/housekeeping-tasks/{taskId}', [HousekeepingTaskController::class, 'show'])
+            ->middleware('permission:rooms.read')
+            ->name('housekeeping-tasks.show');
+        Route::patch('/housekeeping-tasks/{taskId}/assignment', [HousekeepingTaskController::class, 'assign'])
+            ->middleware('permission:rooms.write')
+            ->name('housekeeping-tasks.assignment.update');
+        Route::post('/housekeeping-tasks/{taskId}/start', [HousekeepingTaskController::class, 'start'])
+            ->middleware('permission:rooms.write')
+            ->name('housekeeping-tasks.start');
+        Route::post('/housekeeping-tasks/{taskId}/complete', [HousekeepingTaskController::class, 'complete'])
+            ->middleware('permission:rooms.write')
+            ->name('housekeeping-tasks.complete');
+
         Route::get('/ancillary-charge-types', [AncillaryChargeTypeController::class, 'index'])
             ->middleware('permission:folios.read')
             ->name('ancillary-charge-types.index');

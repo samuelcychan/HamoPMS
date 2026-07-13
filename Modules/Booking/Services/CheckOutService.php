@@ -12,6 +12,7 @@ use Modules\Folio\Models\Folio;
 use Modules\Folio\Models\FolioLineItem;
 use Modules\Payment\Models\Payment;
 use Modules\Property\Models\Room;
+use Modules\Property\Services\HousekeepingTaskService;
 use Modules\Property\Services\RoomInventoryService;
 
 class CheckOutService
@@ -20,6 +21,7 @@ class CheckOutService
         private readonly RoomInventoryService $rooms,
         private readonly LateCheckoutFeeRule $lateFeeRule,
         private readonly ReservationRateCalculator $rates,
+        private readonly HousekeepingTaskService $housekeeping,
     ) {}
 
     public function checkOut(int $bookingId, int $actorId): array
@@ -99,6 +101,12 @@ class CheckOutService
                 $actorId,
                 "Checked out reservation {$booking->id}.",
             );
+            $housekeepingTask = $this->housekeeping->createForCheckout(
+                (int) $booking->property_id,
+                (int) $booking->room_id,
+                $booking->id,
+                $actorId,
+            );
 
             $folio->update(['status' => Folio::STATUS_CLOSED]);
             $booking->update([
@@ -122,6 +130,7 @@ class CheckOutService
                 'folio' => $folio->refresh(),
                 'outstanding_balance' => '0.00',
                 'late_checkout_fee' => $lateFeeAmount,
+                'housekeeping_task' => $housekeepingTask,
             ];
         });
 
