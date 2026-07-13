@@ -39,4 +39,5 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     require __DIR__.'/api/v1/availability.php';
     require __DIR__.'/api/v1/payments.php';
     require __DIR__.'/api/v1/folios.php';
+    require __DIR__.'/api/v1/reports.php';
 });

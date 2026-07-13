@@ -29,6 +29,8 @@ tags:
     description: Idempotent intent, capture, refund, void, and split settlement.
   - name: Payment webhooks
     description: Signed gateway settlement reconciliation.
+  - name: Reports
+    description: Property-scoped operational and occupancy reports with JSON or CSV output.
 paths:
   /auth/register:
     post:
@@ -731,6 +733,97 @@ paths:
                 $ref: '#/components/schemas/WebhookAcknowledgementResponse'
         '400':
           $ref: '#/components/responses/InvalidWebhook'
+  /reports/arrivals:
+    get:
+      tags: [Reports]
+      operationId: getArrivalsReport
+      summary: List arrivals for a property and date
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportPropertyId'
+        - $ref: '#/components/parameters/PropertyHeader'
+        - $ref: '#/components/parameters/ReportDate'
+        - $ref: '#/components/parameters/ReportFormat'
+      responses:
+        '200':
+          $ref: '#/components/responses/StayReport'
+        '400':
+          $ref: '#/components/responses/PropertyContextRequired'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /reports/departures:
+    get:
+      tags: [Reports]
+      operationId: getDeparturesReport
+      summary: List departures for a property and date
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportPropertyId'
+        - $ref: '#/components/parameters/PropertyHeader'
+        - $ref: '#/components/parameters/ReportDate'
+        - $ref: '#/components/parameters/ReportFormat'
+      responses:
+        '200':
+          $ref: '#/components/responses/StayReport'
+        '400':
+          $ref: '#/components/responses/PropertyContextRequired'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /reports/in-house:
+    get:
+      tags: [Reports]
+      operationId: getInHouseReport
+      summary: List guests who are in house at query time
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportPropertyId'
+        - $ref: '#/components/parameters/PropertyHeader'
+        - $ref: '#/components/parameters/ReportFormat'
+      responses:
+        '200':
+          $ref: '#/components/responses/StayReport'
+        '400':
+          $ref: '#/components/responses/PropertyContextRequired'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /reports/occupancy:
+    get:
+      tags: [Reports]
+      operationId: getOccupancyReport
+      summary: Calculate occupancy for a property and date
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReportPropertyId'
+        - $ref: '#/components/parameters/PropertyHeader'
+        - $ref: '#/components/parameters/ReportDate'
+        - $ref: '#/components/parameters/ReportFormat'
+      responses:
+        '200':
+          $ref: '#/components/responses/OccupancyReport'
+        '400':
+          $ref: '#/components/responses/PropertyContextRequired'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
 components:
   securitySchemes:
     bearerAuth:
@@ -776,6 +869,30 @@ components:
         type: string
         minLength: 1
         maxLength: 255
+    ReportPropertyId:
+      name: property_id
+      in: query
+      required: false
+      description: Property context; required when X-Property-ID is omitted.
+      schema:
+        $ref: '#/components/schemas/Identifier'
+    ReportDate:
+      name: date
+      in: query
+      required: false
+      description: Report date; defaults to today in the application timezone.
+      schema:
+        type: string
+        format: date
+    ReportFormat:
+      name: format
+      in: query
+      required: false
+      description: Response representation; defaults to JSON.
+      schema:
+        type: string
+        enum: [json, csv]
+        default: json
     PropertyHeader:
       name: X-Property-ID
       in: header
@@ -862,6 +979,40 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+    StayReport:
+      description: Operational stay report in the requested representation
+      headers:
+        X-Report-Row-Count:
+          schema:
+            type: integer
+          description: Present for CSV responses.
+        Server-Timing:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StayReportResponse'
+        text/csv:
+          schema:
+            type: string
+    OccupancyReport:
+      description: Occupancy report in the requested representation
+      headers:
+        X-Report-Row-Count:
+          schema:
+            type: integer
+          description: Present for CSV responses.
+        Server-Timing:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/OccupancyReportResponse'
+        text/csv:
+          schema:
+            type: string
     ValidationError:
       description: The request contains invalid data
       content:
@@ -1244,6 +1395,127 @@ components:
             - 'null'
         status:
           type: string
+    ReportStayRow:
+      type: object
+      required:
+        - booking_id
+        - guest_id
+        - guest_name
+        - guest_email
+        - room_number
+        - room_type_code
+        - room_type_name
+        - check_in
+        - check_out
+        - guests
+        - status
+        - checked_in_at
+        - checked_out_at
+      properties:
+        booking_id:
+          $ref: '#/components/schemas/Identifier'
+        guest_id:
+          $ref: '#/components/schemas/Identifier'
+        guest_name:
+          type: string
+        guest_email:
+          type: string
+          format: email
+        room_number:
+          type: [string, 'null']
+        room_type_code:
+          type: [string, 'null']
+        room_type_name:
+          type: [string, 'null']
+        check_in:
+          type: string
+          format: date
+        check_out:
+          type: string
+          format: date
+        guests:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+        checked_in_at:
+          type: [string, 'null']
+          format: date-time
+        checked_out_at:
+          type: [string, 'null']
+          format: date-time
+    OccupancyReportData:
+      type: object
+      required:
+        - date
+        - total_rooms
+        - out_of_service_rooms
+        - sellable_rooms
+        - occupied_rooms
+        - available_rooms
+        - occupancy_percentage
+      properties:
+        date:
+          type: string
+          format: date
+        total_rooms:
+          type: integer
+          minimum: 0
+        out_of_service_rooms:
+          type: integer
+          minimum: 0
+        sellable_rooms:
+          type: integer
+          minimum: 0
+        occupied_rooms:
+          type: integer
+          minimum: 0
+        available_rooms:
+          type: integer
+          minimum: 0
+        occupancy_percentage:
+          type: number
+          minimum: 0
+    OperationalReportMeta:
+      type: object
+      required: [name, property_id, format, columns, row_count, generated_at]
+      properties:
+        name:
+          type: string
+          enum: [arrivals, departures, in-house, occupancy]
+        property_id:
+          $ref: '#/components/schemas/Identifier'
+        format:
+          type: string
+          const: json
+        columns:
+          type: array
+          items:
+            type: string
+        row_count:
+          type: integer
+          minimum: 0
+        generated_at:
+          type: string
+          format: date-time
+        date:
+          type: string
+          format: date
+        as_of:
+          type: string
+          format: date-time
+    ReportPerformance:
+      type: object
+      required: [duration_ms, target_ms, within_target]
+      properties:
+        duration_ms:
+          type: number
+          minimum: 0
+        target_ms:
+          type: integer
+          const: 250
+        within_target:
+          type: boolean
     Booking:
       type: object
       required:
@@ -1558,6 +1830,36 @@ components:
           properties:
             idempotent_replay:
               type: boolean
+    StayReportResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportStayRow'
+        meta:
+          type: object
+          required: [report, performance]
+          properties:
+            report:
+              $ref: '#/components/schemas/OperationalReportMeta'
+            performance:
+              $ref: '#/components/schemas/ReportPerformance'
+    OccupancyReportResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: '#/components/schemas/OccupancyReportData'
+        meta:
+          type: object
+          required: [report, performance]
+          properties:
+            report:
+              $ref: '#/components/schemas/OperationalReportMeta'
+            performance:
+              $ref: '#/components/schemas/ReportPerformance'
     PaymentOperationResponse:
       type: object
       required: [data, meta]
