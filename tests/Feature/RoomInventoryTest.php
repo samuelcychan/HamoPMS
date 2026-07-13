@@ -7,6 +7,7 @@ use App\Models\RoleAssignment;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Modules\Property\Models\Amenity;
 use Modules\Property\Models\Property;
 use Modules\Property\Models\Room;
 use Modules\Property\Models\RoomType;
@@ -102,6 +103,68 @@ class RoomInventoryTest extends TestCase
             ->assertNoContent();
 
         $this->assertSoftDeleted('rooms', ['id' => $roomId]);
+    }
+
+    public function test_amenity_crud_and_room_assignment_are_property_scoped(): void
+    {
+        $room = $this->createRoom();
+        $create = $this->actingAs($this->user, 'sanctum')
+            ->postJson("/api/v1/properties/{$this->property->id}/amenities", [
+                'name' => 'Ocean View',
+                'code' => 'OCEAN_VIEW',
+                'description' => 'Unobstructed ocean view.',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.code', 'OCEAN_VIEW')
+            ->assertJsonPath('data.is_active', true);
+        $amenityId = $create->json('data.id');
+
+        $this->actingAs($this->user, 'sanctum')
+            ->getJson("/api/v1/properties/{$this->property->id}/amenities/{$amenityId}")
+            ->assertOk()
+            ->assertJsonPath('data.rooms_count', 0);
+
+        $this->actingAs($this->user, 'sanctum')
+            ->getJson("/api/v1/properties/{$this->property->id}/amenities")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.rooms_count', 0);
+
+        $this->actingAs($this->user, 'sanctum')
+            ->putJson("/api/v1/properties/{$this->property->id}/amenities/{$amenityId}", [
+                'name' => 'Premium Ocean View',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Premium Ocean View');
+
+        $this->actingAs($this->user, 'sanctum')
+            ->putJson("{$this->roomsUrl()}/{$room->id}/amenities", ['amenity_ids' => [$amenityId]])
+            ->assertOk()
+            ->assertJsonPath('data.amenities.0.id', $amenityId);
+        $this->assertDatabaseHas('amenity_room', ['amenity_id' => $amenityId, 'room_id' => $room->id]);
+
+        $otherProperty = Property::create([
+            'name' => 'Other Hotel',
+            'address' => '2 Main Street',
+            'type' => 'hotel',
+        ]);
+        $otherAmenity = Amenity::create([
+            'property_id' => $otherProperty->id,
+            'name' => 'Private Pool',
+            'code' => 'PRIVATE_POOL',
+        ]);
+        $this->actingAs($this->user, 'sanctum')
+            ->putJson("{$this->roomsUrl()}/{$room->id}/amenities", [
+                'amenity_ids' => [$otherAmenity->id],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonStructure(['error' => ['details' => ['fields' => ['amenity_ids.0']]]]);
+
+        $this->actingAs($this->user, 'sanctum')
+            ->deleteJson("/api/v1/properties/{$this->property->id}/amenities/{$amenityId}")
+            ->assertNoContent();
+        $this->assertSoftDeleted('amenities', ['id' => $amenityId]);
+        $this->assertDatabaseMissing('amenity_room', ['amenity_id' => $amenityId, 'room_id' => $room->id]);
     }
 
     public function test_room_type_must_belong_to_the_same_property_as_the_room(): void

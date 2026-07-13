@@ -5,6 +5,7 @@ namespace Modules\Property\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -54,6 +55,11 @@ class Room extends Model
     public function roomType(): BelongsTo
     {
         return $this->belongsTo(RoomType::class);
+    }
+
+    public function amenities(): BelongsToMany
+    {
+        return $this->belongsToMany(Amenity::class)->withTimestamps();
     }
 
     public function statusHistory(): HasMany

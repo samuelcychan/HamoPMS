@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Folio\Http\Controllers\AncillaryChargeTypeController;
+use Modules\Property\Http\Controllers\AmenityController;
 use Modules\Property\Http\Controllers\HousekeepingTaskController;
 use Modules\Property\Http\Controllers\MaintenanceTicketController;
 use Modules\Property\Http\Controllers\PropertyController;
@@ -94,6 +95,22 @@ Route::middleware(['auth:sanctum', 'active'])->prefix('properties')->name('prope
             ->middleware('permission:rooms.write')
             ->name('room-types.destroy');
 
+        Route::get('/amenities', [AmenityController::class, 'index'])
+            ->middleware('permission:rooms.read')
+            ->name('amenities.index');
+        Route::post('/amenities', [AmenityController::class, 'store'])
+            ->middleware('permission:rooms.write')
+            ->name('amenities.store');
+        Route::get('/amenities/{amenityId}', [AmenityController::class, 'show'])
+            ->middleware('permission:rooms.read')
+            ->name('amenities.show');
+        Route::put('/amenities/{amenityId}', [AmenityController::class, 'update'])
+            ->middleware('permission:rooms.write')
+            ->name('amenities.update');
+        Route::delete('/amenities/{amenityId}', [AmenityController::class, 'destroy'])
+            ->middleware('permission:rooms.write')
+            ->name('amenities.destroy');
+
         Route::get('/rooms', [RoomController::class, 'index'])
             ->middleware('permission:rooms.read')
             ->name('rooms.index');
@@ -115,6 +132,9 @@ Route::middleware(['auth:sanctum', 'active'])->prefix('properties')->name('prope
         Route::get('/rooms/{roomId}/status-history', [RoomController::class, 'statusHistory'])
             ->middleware('permission:rooms.read')
             ->name('rooms.status-history.index');
+        Route::put('/rooms/{roomId}/amenities', [RoomController::class, 'syncAmenities'])
+            ->middleware('permission:rooms.write')
+            ->name('rooms.amenities.update');
 
         Route::get('/', [PropertyController::class, 'show'])
             ->middleware('permission:properties.read')

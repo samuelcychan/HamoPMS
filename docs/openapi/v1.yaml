@@ -15,6 +15,8 @@ tags:
     description: Registration, token issuance, revocation, and current-user access.
   - name: Availability
     description: Property-scoped room-type availability searches.
+  - name: Room inventory
+    description: Property-scoped rooms, amenities, status restrictions, and audit history.
   - name: Reservations
     description: Reservation creation, retrieval, updates, and deletion.
   - name: Check-in
@@ -218,6 +220,154 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/PropertyContextMismatch'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /properties/{propertyId}/amenities:
+    parameters:
+      - $ref: '#/components/parameters/PropertyId'
+    get:
+      tags: [Room inventory]
+      operationId: listAmenities
+      summary: List property amenities
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: Paginated amenities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AmenityCollectionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Room inventory]
+      operationId: createAmenity
+      summary: Create a property amenity
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AmenityRequest'
+      responses:
+        '201':
+          description: Amenity created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AmenityResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /properties/{propertyId}/amenities/{amenityId}:
+    parameters:
+      - $ref: '#/components/parameters/PropertyId'
+      - $ref: '#/components/parameters/AmenityId'
+    get:
+      tags: [Room inventory]
+      operationId: getAmenity
+      summary: Get a property amenity
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Amenity details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AmenityResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Room inventory]
+      operationId: updateAmenity
+      summary: Update a property amenity
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AmenityUpdateRequest'
+      responses:
+        '200':
+          description: Amenity updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AmenityResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Room inventory]
+      operationId: deleteAmenity
+      summary: Delete a property amenity and detach it from rooms
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Amenity deleted
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /properties/{propertyId}/rooms/{roomId}/amenities:
+    put:
+      tags: [Room inventory]
+      operationId: assignRoomAmenities
+      summary: Replace a room's amenities with a property-scoped set
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PropertyId'
+        - $ref: '#/components/parameters/RoomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AmenityAssignmentRequest'
+      responses:
+        '200':
+          description: Room with assigned amenities
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
   /bookings:
@@ -1383,6 +1533,18 @@ components:
       required: true
       schema:
         $ref: '#/components/schemas/Identifier'
+    AmenityId:
+      name: amenityId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Identifier'
+    RoomId:
+      name: roomId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Identifier'
     HousekeepingTaskId:
       name: taskId
       in: path
@@ -1949,6 +2111,71 @@ components:
         status:
           type: string
           enum: [clean, dirty, cleaning, occupied, out_of_service]
+        amenities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Amenity'
+    Amenity:
+      type: object
+      required: [id, property_id, name, code, is_active]
+      properties:
+        id:
+          $ref: '#/components/schemas/Identifier'
+        property_id:
+          $ref: '#/components/schemas/Identifier'
+        name:
+          type: string
+        code:
+          type: string
+        description:
+          type: [string, 'null']
+        is_active:
+          type: boolean
+        rooms_count:
+          type: integer
+          minimum: 0
+    AmenityRequest:
+      type: object
+      additionalProperties: false
+      required: [name, code]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        code:
+          type: string
+          maxLength: 50
+        description:
+          type: [string, 'null']
+          maxLength: 2000
+        is_active:
+          type: boolean
+    AmenityUpdateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        code:
+          type: string
+          maxLength: 50
+        description:
+          type: [string, 'null']
+          maxLength: 2000
+        is_active:
+          type: boolean
+    AmenityAssignmentRequest:
+      type: object
+      additionalProperties: false
+      required: [amenity_ids]
+      properties:
+        amenity_ids:
+          type: array
+          maxItems: 100
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/Identifier'
     MaintenanceTicket:
       type: object
       required:
@@ -2831,6 +3058,32 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/HousekeepingTask'
+    RoomResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/Room'
+    AmenityResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/Amenity'
+    AmenityCollectionResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Amenity'
+        meta:
+          type: object
+          required: [pagination]
+          properties:
+            pagination:
+              $ref: '#/components/schemas/Pagination'
     HousekeepingTaskCollectionResponse:
       type: object
       required: [data, meta]

@@ -37,6 +37,11 @@ class Property extends Model
         return $this->hasMany(Room::class);
     }
 
+    public function amenities(): HasMany
+    {
+        return $this->hasMany(Amenity::class);
+    }
+
     public function ancillaryChargeTypes(): HasMany
     {
         return $this->hasMany(AncillaryChargeType::class);
