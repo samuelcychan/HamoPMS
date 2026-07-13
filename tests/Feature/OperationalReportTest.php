@@ -71,6 +71,7 @@ class OperationalReportTest extends TestCase
             checkedOutAt: '2026-07-13 09:00:00',
         );
         $this->createBooking('Cancelled Guest', '2026-07-13', '2026-07-14', Booking::STATUS_CANCELLED);
+        $this->createBooking('No Show Guest', '2026-07-12', '2026-07-13', Booking::STATUS_CONFIRMED);
 
         $otherProperty = $this->createProperty('Other Hotel');
         $otherType = RoomType::create([
@@ -88,6 +89,15 @@ class OperationalReportTest extends TestCase
             'room_type_id' => $otherType->id,
             'check_in' => '2026-07-13',
             'check_out' => '2026-07-14',
+            'guests' => 1,
+            'status' => Booking::STATUS_CONFIRMED,
+        ]);
+        Booking::create([
+            'user_id' => User::factory()->create(['name' => 'Other No Show'])->id,
+            'property_id' => $otherProperty->id,
+            'room_type_id' => $otherType->id,
+            'check_in' => '2026-07-12',
+            'check_out' => '2026-07-13',
             'guests' => 1,
             'status' => Booking::STATUS_CONFIRMED,
         ]);
@@ -144,6 +154,30 @@ class OperationalReportTest extends TestCase
             ->assertJsonPath('data.occupied_rooms', 2)
             ->assertJsonPath('data.available_rooms', 1)
             ->assertJsonPath('data.occupancy_percentage', 66.67);
+    }
+
+    public function test_no_show_and_room_status_reports_cover_daily_operations(): void
+    {
+        $this->report('no-shows', ['date' => '2026-07-12'])
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.guest_name', 'No Show Guest')
+            ->assertJsonPath('meta.report.name', 'no-shows')
+            ->assertJsonPath('meta.report.date', '2026-07-12');
+        $this->report('no-shows', ['date' => '2026-07-13'])
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->report('room-status')
+            ->assertOk()
+            ->assertJsonPath('data.total_rooms', 4)
+            ->assertJsonPath('data.clean_rooms', 1)
+            ->assertJsonPath('data.dirty_rooms', 1)
+            ->assertJsonPath('data.cleaning_rooms', 0)
+            ->assertJsonPath('data.occupied_rooms', 1)
+            ->assertJsonPath('data.out_of_service_rooms', 1)
+            ->assertJsonPath('meta.report.name', 'room-status')
+            ->assertJsonPath('meta.report.as_of', '2026-07-13T10:00:00+00:00');
     }
 
     public function test_reports_can_be_exported_as_csv(): void

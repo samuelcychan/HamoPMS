@@ -36,6 +36,15 @@ class OperationalReportService
         'occupancy_percentage',
     ];
 
+    public const ROOM_STATUS_COLUMNS = [
+        'total_rooms',
+        'clean_rooms',
+        'dirty_rooms',
+        'cleaning_rooms',
+        'occupied_rooms',
+        'out_of_service_rooms',
+    ];
+
     public function arrivals(int $propertyId, CarbonImmutable $date): array
     {
         $start = $date->startOfDay();
@@ -65,12 +74,38 @@ class OperationalReportService
             $this->stayQuery($propertyId)
                 ->where('check_out', '>=', $start)
                 ->where('check_out', '<', $end)
-                ->whereIn('status', [
-                    Booking::STATUS_CONFIRMED,
-                    Booking::STATUS_CHECKED_IN,
-                    Booking::STATUS_COMPLETED,
-                ])
+                ->where(function (Builder $query): void {
+                    $query->whereIn('status', [
+                        Booking::STATUS_CHECKED_IN,
+                        Booking::STATUS_COMPLETED,
+                    ])->orWhere(function (Builder $confirmed): void {
+                        $confirmed
+                            ->where('status', Booking::STATUS_CONFIRMED)
+                            ->where('check_in', '>=', CarbonImmutable::today());
+                    });
+                })
                 ->orderBy('check_out')
+                ->orderBy('id')
+                ->get(),
+        );
+    }
+
+    public function noShows(int $propertyId, CarbonImmutable $date): array
+    {
+        $start = $date->startOfDay();
+        $end = $start->addDay();
+
+        if ($end->greaterThan(CarbonImmutable::now())) {
+            return [];
+        }
+
+        return $this->stayRows(
+            $this->stayQuery($propertyId)
+                ->where('check_in', '>=', $start)
+                ->where('check_in', '<', $end)
+                ->where('status', Booking::STATUS_CONFIRMED)
+                ->whereNull('checked_in_at')
+                ->orderBy('check_in')
                 ->orderBy('id')
                 ->get(),
         );
@@ -120,6 +155,24 @@ class OperationalReportService
             'occupancy_percentage' => $sellableRooms === 0
                 ? 0.0
                 : round(($occupiedRooms / $sellableRooms) * 100, 2),
+        ]];
+    }
+
+    public function roomStatus(int $propertyId): array
+    {
+        $counts = Room::query()
+            ->where('property_id', $propertyId)
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        return [[
+            'total_rooms' => $counts->sum(),
+            'clean_rooms' => (int) $counts->get(Room::STATUS_CLEAN, 0),
+            'dirty_rooms' => (int) $counts->get(Room::STATUS_DIRTY, 0),
+            'cleaning_rooms' => (int) $counts->get(Room::STATUS_CLEANING, 0),
+            'occupied_rooms' => (int) $counts->get(Room::STATUS_OCCUPIED, 0),
+            'out_of_service_rooms' => (int) $counts->get(Room::STATUS_OUT_OF_SERVICE, 0),
         ]];
     }
 
