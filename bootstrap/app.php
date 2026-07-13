@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\RequirePermission;
 use App\Http\Middleware\ResolvePropertyContext;
 use App\Http\Responses\ApiResponse;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->statefulApi();
         $middleware->alias([
+            'active' => EnsureUserIsActive::class,
             'permission' => RequirePermission::class,
             'property.context' => ResolvePropertyContext::class,
         ]);

@@ -29,3 +29,16 @@ Users with `users.manage_roles` can inspect, create, and remove role assignments
 - `DELETE /api/v1/admin/users/{userId}/role-assignments/{assignmentId}`
 
 The create payload contains a role slug and optional `property_id`. `assigned_by`, `created_at`, and `updated_at` provide the baseline assignment audit fields.
+
+A global Admin role assignment is the super-admin capability. It can manage users and roles across all properties. A property-scoped Admin must include `property_id` and can manage only users and assignments in that property.
+
+## Admin user API
+
+- `GET /api/v1/admin/users?property_id={propertyId}`
+- `POST /api/v1/admin/users`
+- `GET /api/v1/admin/users/{userId}?property_id={propertyId}`
+- `PATCH /api/v1/admin/users/{userId}/status`
+
+Creating a user requires `name`, `email`, a confirmed `password`, `property_id`, and an initial role slug. Status changes require `property_id` and `is_active`. Deactivation revokes all API tokens. A scoped Admin cannot globally deactivate a user who also has access to another property.
+
+User reads, creation, status changes, and role assignment changes write structured `admin.*` audit events with the actor, target user, and property context.

@@ -46,7 +46,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $validated['email'])->first();
 
-        if (! $user || ! Hash::check($validated['password'], $user->password)) {
+        if (! $user || ! $user->is_active || ! Hash::check($validated['password'], $user->password)) {
             Log::warning('auth.login_failed', [
                 'email' => $validated['email'],
                 'ip' => $request->ip(),

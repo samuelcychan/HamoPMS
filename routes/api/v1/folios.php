@@ -10,7 +10,7 @@ use Modules\Folio\Http\Controllers\FolioLineItemController;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth:sanctum', 'property.context'])->prefix('bookings/{booking_id}/folio')->name('folio.')->group(function () {
+Route::middleware(['auth:sanctum', 'active', 'property.context'])->prefix('bookings/{booking_id}/folio')->name('folio.')->group(function () {
     Route::get('/', [FolioController::class, 'show'])
         ->middleware('permission:folios.read')
         ->name('show');

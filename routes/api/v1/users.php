@@ -9,7 +9,7 @@ use Modules\User\Http\Controllers\UserController;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth:sanctum')->prefix('users')->name('users.')->group(function () {
+Route::middleware(['auth:sanctum', 'active'])->prefix('users')->name('users.')->group(function () {
     Route::get('/', [UserController::class, 'index'])
         ->name('index');
 
