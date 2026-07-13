@@ -8,6 +8,8 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Booking\Models\Booking;
+use Modules\Folio\Models\Folio;
+use Modules\Folio\Models\FolioLineItem;
 use Modules\Property\Models\Property;
 use Modules\Property\Models\Room;
 use Modules\Property\Models\RoomType;
@@ -72,6 +74,12 @@ class ReservationCreationTest extends TestCase
             'property_id' => $this->property->id,
             'room_type_id' => $this->roomType->id,
             'status' => Booking::STATUS_CONFIRMED,
+        ]);
+        $folio = Folio::where('booking_id', $response->json('data.id'))->firstOrFail();
+        $this->assertDatabaseHas('folio_line_items', [
+            'folio_id' => $folio->id,
+            'type' => FolioLineItem::TYPE_ROOM_RATE,
+            'amount' => '500.00',
         ]);
     }
 

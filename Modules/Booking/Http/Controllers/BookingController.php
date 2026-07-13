@@ -10,13 +10,16 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Modules\Booking\Models\Booking;
+use Modules\Booking\Services\ReservationModificationService;
 use Modules\Booking\Services\ReservationService;
 
 class BookingController extends Controller
 {
     public function __construct(
         private readonly ReservationService $reservations,
+        private readonly ReservationModificationService $modifications,
         private readonly PropertyContext $propertyContext,
     ) {}
 
@@ -73,19 +76,50 @@ class BookingController extends Controller
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $booking = $this->bookingQuery($request)->findOrFail($id);
+        $booking = $this->propertyContext->scope(Booking::query(), $request)->findOrFail($id);
 
         $validated = $request->validate([
-            'check_in' => ['sometimes', 'date', 'after_or_equal:today'],
-            'check_out' => ['sometimes', 'date', 'after:check_in'],
+            'room_type_id' => ['sometimes', 'integer'],
+            'check_in' => ['sometimes', 'date'],
+            'check_out' => ['sometimes', 'date'],
             'guests' => ['sometimes', 'integer', 'min:1'],
-            'status' => ['sometimes', 'string', 'in:pending,confirmed,cancelled,completed'],
-            'notes' => ['nullable', 'string'],
+            'occupancy' => ['sometimes', 'integer', 'min:1'],
+            'notes' => ['sometimes', 'nullable', 'string'],
+            'special_requests' => ['sometimes', 'nullable', 'array'],
+            'special_requests.*' => ['string', 'max:255'],
+            'status' => ['prohibited'],
         ]);
 
-        $booking->update($validated);
+        $editable = ['room_type_id', 'check_in', 'check_out', 'guests', 'occupancy', 'notes', 'special_requests'];
 
-        return ApiResponse::success($booking);
+        if (array_intersect($editable, array_keys($validated)) === []) {
+            throw ValidationException::withMessages([
+                'reservation' => ['At least one editable reservation field is required.'],
+            ]);
+        }
+
+        if (array_key_exists('guests', $validated) && array_key_exists('occupancy', $validated)) {
+            throw ValidationException::withMessages([
+                'occupancy' => ['Use either occupancy or guests, not both.'],
+            ]);
+        }
+
+        $result = $this->modifications->modify($booking->id, $request->user()->id, $validated);
+
+        if ($result === null) {
+            return ApiResponse::error(
+                'INVENTORY_UNAVAILABLE',
+                'The property is unavailable for the requested dates.',
+                409,
+            );
+        }
+
+        return ApiResponse::success($result['booking'], 200, [
+            'modification' => [
+                'id' => $result['modification']->id,
+                'rate_difference' => $result['rate_difference'],
+            ],
+        ]);
     }
 
     public function destroy(Request $request, string $id): Response

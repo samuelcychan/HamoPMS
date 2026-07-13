@@ -237,6 +237,9 @@ paths:
       tags: [Reservations]
       operationId: updateReservation
       summary: Update a reservation
+      description: |
+        Modifies a pending or confirmed reservation and appends an immutable
+        folio rate adjustment plus a before/after audit record.
       security:
         - bearerAuth: []
       requestBody:
@@ -461,6 +464,8 @@ components:
       additionalProperties: false
       minProperties: 1
       properties:
+        room_type_id:
+          $ref: '#/components/schemas/Identifier'
         check_in:
           type: string
           format: date
@@ -470,12 +475,20 @@ components:
         guests:
           type: integer
           minimum: 1
-        status:
-          $ref: '#/components/schemas/EditableBookingStatus'
+        occupancy:
+          type: integer
+          minimum: 1
         notes:
           type:
             - string
             - 'null'
+        special_requests:
+          type:
+            - array
+            - 'null'
+          items:
+            type: string
+            maxLength: 255
     CheckInRequest:
       type: object
       additionalProperties: false
@@ -527,9 +540,6 @@ components:
     BookingStatus:
       type: string
       enum: [pending, confirmed, checked_in, cancelled, completed]
-    EditableBookingStatus:
-      type: string
-      enum: [pending, confirmed, cancelled, completed]
     Booking:
       type: object
       required:
@@ -578,6 +588,12 @@ components:
           type:
             - string
             - 'null'
+        special_requests:
+          type:
+            - array
+            - 'null'
+          items:
+            type: string
         room:
           oneOf:
             - $ref: '#/components/schemas/Room'
@@ -681,6 +697,19 @@ components:
       properties:
         data:
           $ref: '#/components/schemas/Booking'
+        meta:
+          type: object
+          required: [modification]
+          properties:
+            modification:
+              type: object
+              required: [id, rate_difference]
+              properties:
+                id:
+                  $ref: '#/components/schemas/Identifier'
+                rate_difference:
+                  type: string
+                  pattern: '^-?\d+\.\d{2}$'
     BookingCollectionResponse:
       type: object
       required: [data, meta]

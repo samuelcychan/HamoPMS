@@ -9,11 +9,15 @@ use LogicException;
 
 class FolioLineItem extends Model
 {
+    public const TYPE_ROOM_RATE = 'room_rate';
+
+    public const TYPE_ROOM_RATE_ADJUSTMENT = 'room_rate_adjustment';
+
     public const CREATED_AT = 'posted_at';
 
     public const UPDATED_AT = null;
 
-    public const VALID_TYPES = ['room_charge', 'tax'];
+    public const POSTABLE_TYPES = ['room_charge', 'tax'];
 
     protected $fillable = [
         'folio_id',

@@ -17,7 +17,7 @@ class FolioLineItemController extends Controller
         $booking = Booking::where('user_id', $request->user()->id)->findOrFail($bookingId);
 
         $validated = $request->validate([
-            'type' => ['required', 'string', 'in:'.implode(',', FolioLineItem::VALID_TYPES)],
+            'type' => ['required', 'string', 'in:'.implode(',', FolioLineItem::POSTABLE_TYPES)],
             'description' => ['required', 'string', 'max:255'],
             'amount' => ['required', 'numeric'],
         ]);
